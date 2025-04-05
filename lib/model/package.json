@@ -1,0 +1,28 @@
+{
+  "name": "@titorelli/model",
+  "private": true,
+  "version": "0.1.0",
+  "main": "index.ts",
+  "author": "YChebotaev",
+  "license": "UNLICENSED",
+  "scripts": {
+    "test": "ts-node test.ts"
+  },
+  "dependencies": {
+    "@vowpalwabbit/vowpalwabbit": "^0.0.8",
+    "csv": "^6.3.11",
+    "execa": "^9.5.2",
+    "knex": "^3.1.0",
+    "linkify-string": "^4.2.0",
+    "linkifyjs": "^4.2.0",
+    "mkdirp": "^3.0.1",
+    "natural": "^6.8.0",
+    "node-emoji": "^2.2.0",
+    "pino": "^9.6.0",
+    "replace-ext": "^2.0.0",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "@types/replace-ext": "^2.0.2"
+  }
+}
