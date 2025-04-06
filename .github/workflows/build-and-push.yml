@@ -24,15 +24,6 @@ jobs:
           registry: ${{env.REGISTRY}}
           username: ${{github.actor}}
           password: ${{secrets.GITHUB_TOKEN}}
-      - name: Create .env file
-        uses: SpicyPizza/create-envfile@v2.0.3
-        with:
-          envkey_SITE_ORIGIN: https://next.titorelli.ru
-          envkey_YANDEX_FUNCTION_URL: ${{secrets.YANDEX_FUNCTION_URL}}
-          envkey_JWT_SECRET: ${{secrets.JWT_SECRET}}
-          envkey_TELEMETRY_DB_FILENAME: data/telemetry.sqlite
-          envkey_MARKUP_DB_FILENAME: data/markup.sqlite
-          envkey_DOCKHOST_TOKEN: ${{secrets.DOCKHOST_TOKEN}}
       - name: Build and push
         id: push
         uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
