@@ -5,7 +5,6 @@
   "main": "index.ts",
   "scripts": {
     "dev": "nodemon",
-    "prestart": "zx scripts/prestart.mjs",
     "start": "ts-node -r dotenv/config index.ts"
   },
   "license": "AGPL-3.0-only",
