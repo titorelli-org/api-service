@@ -51,8 +51,6 @@ export class BotsService {
     this.dockhost = new DockhostService(dockhostToken)
     this.logger = logger
 
-    console.log('this.db:', this.db)
-
     if (siteOrigin != null) {
       this.siteOrigin = siteOrigin
     }
