@@ -12,11 +12,11 @@ import {
   type ITotems
 } from './lib/model'
 import { Service } from './lib/Service'
-import { TelemetryServer } from './lib/telemetry/TelemetryServer' //'./lib/telemetry/TelemetryServer'
-import { MarkupServer } from './lib/markup/MarkupServer' // './lib/markup/MarkupServer'
-import { BotsService } from './lib/bots/BotsService' // './lib/bots'
+import { TelemetryServer } from './lib/telemetry/TelemetryServer'
+import { MarkupServer } from './lib/markup/MarkupServer'
+import { BotsService } from './lib/bots/BotsService'
 
-const oauthClientsFilename = path.join(__dirname, 'oauth-clients.yaml')
+const oauthClientsFilename = path.join(__dirname, 'data/oauth-clients.yaml')
 
 if (!existsSync(oauthClientsFilename)) {
   throw new Error('oauth-clients.yaml file must be present in a root of module')
