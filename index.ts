@@ -15,6 +15,7 @@ import { Service } from './lib/Service'
 import { TelemetryServer } from './lib/telemetry/TelemetryServer'
 import { MarkupServer } from './lib/markup/MarkupServer'
 import { BotsService } from './lib/bots/BotsService'
+import { env } from './lib/env'
 
 const oauthClientsFilename = path.join(__dirname, 'data/oauth-clients.yaml')
 
@@ -25,8 +26,8 @@ if (!existsSync(oauthClientsFilename)) {
 const logger = pino()
 
 new Service({
-  port: Number(process.env['PORT'] ?? 3000),
-  host: process.env['HOST'] ?? '0.0.0.0',
+  port: env.PORT,
+  host: env.HOST,
   logger,
   modelsStore: new TemporaryStorage(
     (modelId: string) =>

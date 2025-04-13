@@ -24,8 +24,8 @@ export class Db {
   private async initialize() {
     if (this._migrationsDir == null) return;
 
-    // await this._knex.migrate.latest({
-    //   directory: this._migrationsDir,
-    // });
+    await this._knex.migrate.latest({
+      directory: this._migrationsDir,
+    });
   }
 }

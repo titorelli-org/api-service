@@ -1,5 +1,4 @@
 import { exec } from "node:child_process";
-import { z } from "zod";
 const camelcaseKeysPromise = import("camelcase-keys");
 import { DockhostInstaller } from "./DockhostInstaller";
 
@@ -131,21 +130,7 @@ export class DockhostService {
 
     if (project) args.push(`--project ${project}`);
 
-    return new Promise<string>((resolve, reject) => {
-      let t: NodeJS.Timeout;
-
-      this.exec(`container create ${args.join(" ")}`)
-        .then(resolve, reject)
-        .finally(() => {
-          clearTimeout(t);
-        });
-
-      if (replicas === 0) {
-        t = setTimeout(() => {
-          resolve("--succeed-by-timeout--");
-        }, 1000);
-      }
-    });
+    return this.exec(`container create ${args.join(" ")}`);
   }
 
   public async deleteContainer(project: string, name: string) {

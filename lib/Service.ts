@@ -87,10 +87,10 @@ export class Service {
   private casTrainPath = "/cas/train";
   private botsCreatePath = "/bots";
   private botsListPath = "/bots";
-  private botsUpdatePath = "/bots/:externalBotId";
-  private botsStatePath = "/bots/:externalBotId/state";
-  private botsRemovePath = "/bots/:externalBotId";
-  private botsConvergePath = "/bots/converge"; // TODO: Remove
+  private botsUpdatePath = "/bots/:botExtrnalId";
+  private botsStatePath = "/bots/:botExtrnalId/state";
+  private botsRemovePath = "/bots/:botExtrnalId";
+  // private botsConvergePath = "/bots/converge"; // TODO: Remove
   private botsLivenessPath = "/bots/liveness";
   private ouathTokenPath = "/oauth2/token";
 
@@ -123,6 +123,8 @@ export class Service {
 
   async listen() {
     await this.ready;
+
+    await this.bots.start();
 
     await this.service.listen({ port: this.port, host: this.host });
   }
@@ -157,7 +159,7 @@ export class Service {
     await this.installBotsUpdateRoute();
     await this.installBotsRemoveRoute();
     await this.installBotsStateRoute();
-    await this.installBotsConvergeRoute();
+    // await this.installBotsConvergeRoute();
     await this.installBotsLivenessRoute();
 
     await this.installOauthTokenRoute();
@@ -921,7 +923,7 @@ export class Service {
   private async installBotsUpdateRoute() {
     await this.service.post<{
       Params: {
-        botExternalId: number;
+        botExtrnalId: number;
       };
       Body: {
         bypassTelemetry?: boolean;
@@ -945,15 +947,15 @@ export class Service {
               bypassTelemetry: { type: "boolean" },
               modelId: { type: "number" },
               tgBotToken: { type: "string" },
-              state: { enum: ["starting", "stopping"] },
+              state: { enum: ["starting", "stopping", "deleted"] },
             },
           },
         },
       },
-      async ({ body, params: { botExternalId } }) => {
+      async ({ body, params: { botExtrnalId } }) => {
         await this.ready;
 
-        await this.bots.update({ id: botExternalId, ...body });
+        await this.bots.update({ ...body, id: botExtrnalId });
       },
     );
   }
@@ -961,7 +963,7 @@ export class Service {
   private async installBotsRemoveRoute() {
     await this.service.delete<{
       Params: {
-        botExternalId: number;
+        botExtrnalId: number;
       };
     }>(
       this.botsRemovePath,
@@ -975,8 +977,8 @@ export class Service {
           },
         },
       },
-      async ({ params: { botExternalId } }) => {
-        await this.bots.remove(botExternalId);
+      async ({ params: { botExtrnalId } }) => {
+        await this.bots.remove(botExtrnalId);
       },
     );
   }
@@ -984,7 +986,7 @@ export class Service {
   private async installBotsStateRoute() {
     await this.service.get<{
       Params: {
-        externalBotId: number;
+        botExtrnalId: number;
       };
     }>(
       this.botsStatePath,
@@ -993,45 +995,45 @@ export class Service {
           params: {
             type: "object",
             properties: {
-              externalBotId: { type: "number" },
+              botExtrnalId: { type: "number" },
             },
           },
         },
       },
-      async ({ params: { externalBotId } }) => {
+      async ({ params: { botExtrnalId } }) => {
         await this.ready;
 
-        const data = await this.bots.get(externalBotId);
+        const data = await this.bots.get(botExtrnalId);
 
         return data?.state ?? null;
       },
     );
   }
 
-  private async installBotsConvergeRoute() {
-    await this.service.post<{
-      Querystring: {
-        botId: number;
-      };
-    }>(
-      this.botsConvergePath,
-      {
-        schema: {
-          querystring: {
-            type: "object",
-            properties: {
-              botId: { type: "number" },
-            },
-          },
-        },
-      },
-      async ({ query: { botId } }) => {
-        await this.ready;
+  // private async installBotsConvergeRoute() {
+  //   await this.service.post<{
+  //     Querystring: {
+  //       botId: number;
+  //     };
+  //   }>(
+  //     this.botsConvergePath,
+  //     {
+  //       schema: {
+  //         querystring: {
+  //           type: "object",
+  //           properties: {
+  //             botId: { type: "number" },
+  //           },
+  //         },
+  //       },
+  //     },
+  //     async ({ query: { botId } }) => {
+  //       await this.ready;
 
-        return this.bots.convergeFor(botId);
-      },
-    );
-  }
+  //       return this.bots.convergeFor(botId);
+  //     },
+  //   );
+  // }
 
   private async installBotsLivenessRoute() {
     await this.service.post<{
