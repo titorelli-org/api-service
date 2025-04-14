@@ -3,7 +3,8 @@ import { type Logger } from "pino";
 import { Db } from "../Db";
 import { ContainerListResultItem, DockhostService } from "./dockhost";
 import { ContainerNameGenerator } from "./ContainerNameGenerator";
-import { BotModel } from "./BotModel";
+import { BotModel } from "./models";
+import { BotRepository } from "./repositories";
 
 export type BotRecord = {
   id: number;
@@ -37,6 +38,7 @@ export class BotsService {
     path.join(process.cwd(), "/data/bots.sqlite3"),
     path.join(__dirname, "/migrations"),
   );
+  private botRepository: BotRepository;
   private poller: any;
   private aliveTimeouts = new Map<number, NodeJS.Timeout | undefined>();
   private periodicListResultUnsubscribe?: Function;
@@ -66,6 +68,7 @@ export class BotsService {
       "next",
     );
     this.logger = logger;
+    this.botRepository = new BotRepository(this.db, this.logger);
   }
 
   public async start() {
@@ -122,9 +125,9 @@ export class BotsService {
       scopes,
       dockhostImage: this.baseDockhostImage,
       dockhostProject: this.baseDockhostProject,
-      db: this.db,
       nameGenerator: this.nameGenerator,
       dockhost: this.dockhost,
+      botRepository: this.botRepository,
       logger: this.logger,
     });
   }
@@ -138,9 +141,9 @@ export class BotsService {
     return Promise.all(
       records.map(({ id }) =>
         BotModel.getById(id, {
-          db: this.db,
           nameGenerator: this.nameGenerator,
           dockhost: this.dockhost,
+          botRepository: this.botRepository,
           logger: this.logger,
         }),
       ),
@@ -161,9 +164,9 @@ export class BotsService {
     state?: string;
   }) {
     const bot = await BotModel.getByExternalId(externalId, {
-      db: this.db,
       nameGenerator: this.nameGenerator,
       dockhost: this.dockhost,
+      botRepository: this.botRepository,
       logger: this.logger,
     });
 
@@ -188,18 +191,18 @@ export class BotsService {
 
   public async get(id: number) {
     return BotModel.getByExternalId(id, {
-      db: this.db,
       nameGenerator: this.nameGenerator,
       dockhost: this.dockhost,
+      botRepository: this.botRepository,
       logger: this.logger,
     });
   }
 
   public async remove(externalId: number) {
     const bot = await BotModel.getByExternalId(externalId, {
-      db: this.db,
       nameGenerator: this.nameGenerator,
       dockhost: this.dockhost,
+      botRepository: this.botRepository,
       logger: this.logger,
     });
 
@@ -242,9 +245,9 @@ export class BotsService {
     scopes: string[],
   ): Promise<[false] | [true, string[]]> {
     const bot = await BotModel.getByClientId(clientId, {
-      db: this.db,
       nameGenerator: this.nameGenerator,
       dockhost: this.dockhost,
+      botRepository: this.botRepository,
       logger: this.logger,
     });
 

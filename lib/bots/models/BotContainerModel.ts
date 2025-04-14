@@ -1,7 +1,7 @@
 import type { Logger } from "pino";
-import type { DockhostService } from "./dockhost";
+import type { DockhostService } from "../dockhost";
 
-export type ContainerModelConfig = {
+export type BotContainerModelConfig = {
   name: string;
   image: string;
   project: string;
@@ -9,14 +9,14 @@ export type ContainerModelConfig = {
   logger: Logger;
 };
 
-export class ContainerModel {
+export class BotContainerModel {
   private readonly name: string;
   private readonly image: string;
   private readonly project: string;
   private readonly dockhost: DockhostService;
   private readonly logger: Logger;
 
-  constructor(config: ContainerModelConfig) {
+  constructor(config: BotContainerModelConfig) {
     Object.assign(this, config);
   }
 

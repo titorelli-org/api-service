@@ -1,15 +1,15 @@
-import { ContainerModel } from "./ContainerModel";
-import { env } from "../env";
-import type { Db } from "../Db";
-import type { BotRecord } from "./BotsService";
-import type { ContainerNameGenerator } from "./ContainerNameGenerator";
-import type { DockhostService } from "./dockhost";
+import { env } from "../../env";
+import { BotContainerModel } from "./BotContainerModel";
+import type { BotRecord } from "../BotsService";
+import type { ContainerNameGenerator } from "../ContainerNameGenerator";
+import type { DockhostService } from "../dockhost";
 import type { Logger } from "pino";
+import type { BotRepository } from "../repositories";
 
 export type BotModelConfig = {
-  db: Db;
   nameGenerator: ContainerNameGenerator;
   dockhost: DockhostService;
+  botRepository: BotRepository;
   logger: Logger;
 };
 
@@ -34,10 +34,10 @@ export class BotModel implements BotRecord {
     | "deleted";
   public readonly scopes: string;
 
-  private readonly db: Db;
+  private readonly botRepository: BotRepository;
   private readonly nameGen: ContainerNameGenerator;
   private readonly dockhost: DockhostService;
-  private readonly container?: ContainerModel;
+  private readonly container?: BotContainerModel;
   private readonly logger: Logger;
   private readonly siteOrigin = env.SITE_ORIGIN;
 
@@ -62,9 +62,9 @@ export class BotModel implements BotRecord {
     scopes,
     dockhostImage,
     dockhostProject,
-    db,
     nameGenerator,
     dockhost,
+    botRepository,
     logger,
   }: {
     externalId: number;
@@ -76,28 +76,25 @@ export class BotModel implements BotRecord {
     scopes: string;
     dockhostImage: string;
     dockhostProject: string;
-    db: Db;
     nameGenerator: ContainerNameGenerator;
     dockhost: DockhostService;
+    botRepository: BotRepository;
     logger: Logger;
   }) {
     const dockhostContainer = nameGenerator.generate(accountId, externalId);
-    const [{ id }] = await db.knex
-      .insert<BotRecord>({
-        externalId,
-        accessToken,
-        bypassTelemetry,
-        accountId,
-        modelId,
-        tgBotToken,
-        dockhostImage,
-        dockhostContainer,
-        dockhostProject,
-        state: "created",
-        scopes,
-      })
-      .into("bot")
-      .returning<{ id: number }[]>(["id", "state"]);
+
+    const id = await botRepository.create({
+      externalId,
+      accessToken,
+      bypassTelemetry,
+      accountId,
+      modelId,
+      tgBotToken,
+      dockhostImage,
+      dockhostContainer,
+      dockhostProject,
+      scopes,
+    });
 
     return new BotModel(
       {
@@ -115,20 +112,16 @@ export class BotModel implements BotRecord {
         scopes,
       },
       {
-        db,
         nameGenerator,
         dockhost,
+        botRepository,
         logger,
       },
     );
   }
 
   public static async getById(id: number, config: BotModelConfig) {
-    const record = await config.db.knex
-      .select<BotRecord>("*")
-      .from("bot")
-      .where("id", id)
-      .first();
+    const record = await config.botRepository.getById(id);
 
     return record ? new BotModel(record, config) : null;
   }
@@ -137,11 +130,7 @@ export class BotModel implements BotRecord {
     externalId: number,
     config: BotModelConfig,
   ) {
-    const record = await config.db.knex
-      .select<BotRecord>("*")
-      .from("bot")
-      .where("externalId", externalId)
-      .first();
+    const record = await config.botRepository.getByExternalId(externalId);
 
     return record ? new BotModel(record, config) : null;
   }
@@ -157,17 +146,17 @@ export class BotModel implements BotRecord {
 
   constructor(
     record: BotRecord,
-    { db, nameGenerator, dockhost, logger }: BotModelConfig,
+    { nameGenerator, dockhost, botRepository, logger }: BotModelConfig,
   ) {
     Object.assign(this, record);
-    this.db = db;
     this.nameGen = nameGenerator;
     this.dockhost = dockhost;
+    this.botRepository = botRepository;
     this.logger = logger;
 
     const { dockhostContainer, dockhostProject, dockhostImage } = record;
 
-    this.container = new ContainerModel({
+    this.container = new BotContainerModel({
       name: dockhostContainer,
       project: dockhostProject,
       image: dockhostImage,
@@ -237,10 +226,7 @@ export class BotModel implements BotRecord {
   }
 
   public async setBypassTelemetry(bypassTelemetry: boolean) {
-    await this.db
-      .knex("bot")
-      .update<BotRecord>({ bypassTelemetry })
-      .where("id", this.id);
+    await this.botRepository.updateById(this.id, { bypassTelemetry });
 
     Reflect.set(this, "bypassTelemetry", bypassTelemetry);
 
@@ -248,10 +234,7 @@ export class BotModel implements BotRecord {
   }
 
   public async setModelId(modelId: number) {
-    await this.db
-      .knex("bot")
-      .update<BotRecord>({ modelId })
-      .where("id", this.id);
+    await this.botRepository.updateById(this.id, { modelId });
 
     Reflect.set(this, "modelId", modelId);
 
@@ -259,10 +242,7 @@ export class BotModel implements BotRecord {
   }
 
   public async setTgBotToken(tgBotToken: string) {
-    await this.db
-      .knex("bot")
-      .update<BotRecord>({ tgBotToken })
-      .where("id", this.id);
+    await this.botRepository.updateById(this.id, { tgBotToken });
 
     Reflect.set(this, "tgBotToken", tgBotToken);
 
