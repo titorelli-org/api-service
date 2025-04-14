@@ -1,2 +1,2 @@
 export * from "./BotModel";
-export * from "./ContainerModel";
+export * from "./BotContainerModel";

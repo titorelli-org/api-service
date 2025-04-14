@@ -1,9 +1,9 @@
+import type { Logger } from "pino";
 import { env } from "../../env";
 import { BotContainerModel } from "./BotContainerModel";
 import type { BotRecord } from "../BotsService";
 import type { ContainerNameGenerator } from "../ContainerNameGenerator";
 import type { DockhostService } from "../dockhost";
-import type { Logger } from "pino";
 import type { BotRepository } from "../repositories";
 
 export type BotModelConfig = {
@@ -144,15 +144,9 @@ export class BotModel implements BotRecord {
     return this.getById(id, config);
   }
 
-  constructor(
-    record: BotRecord,
-    { nameGenerator, dockhost, botRepository, logger }: BotModelConfig,
-  ) {
+  constructor(record: BotRecord, config: BotModelConfig) {
     Object.assign(this, record);
-    this.nameGen = nameGenerator;
-    this.dockhost = dockhost;
-    this.botRepository = botRepository;
-    this.logger = logger;
+    Object.assign(this, config);
 
     const { dockhostContainer, dockhostProject, dockhostImage } = record;
 
@@ -161,7 +155,7 @@ export class BotModel implements BotRecord {
       project: dockhostProject,
       image: dockhostImage,
       dockhost: this.dockhost,
-      logger,
+      logger: this.logger,
     });
   }
 
@@ -170,16 +164,14 @@ export class BotModel implements BotRecord {
 
     this.logger.info("Starting bot...");
 
-    await this.container.ifExist(null, () =>
-      this.container.create({
-        clientId: this.getClientId(),
-        accessToken: this.accessToken,
-        siteOrigin: this.siteOrigin,
-        tgBotToken: this.tgBotToken,
-      }),
-    );
+    await this.container.create({
+      clientId: this.getClientId(),
+      accessToken: this.accessToken,
+      siteOrigin: this.siteOrigin,
+      tgBotToken: this.tgBotToken,
+    });
 
-    return this.container.start();
+    await this.container.start();
   }
 
   public async stop() {
@@ -187,7 +179,7 @@ export class BotModel implements BotRecord {
 
     this.logger.info("Stopping bot...");
 
-    return this.container.ifExist(() => this.container.stop());
+    return this.container.stop();
   }
 
   public async restart() {
@@ -195,11 +187,8 @@ export class BotModel implements BotRecord {
 
     this.logger.info("Restarting bot...");
 
-    return this.container.ifExist(async () => {
-      await this.container.stop();
-
-      return this.container.start();
-    });
+    await this.container.stop();
+    await this.container.start();
   }
 
   public async delete() {
@@ -207,7 +196,7 @@ export class BotModel implements BotRecord {
 
     this.logger.info("Deleting bot...");
 
-    return this.container.ifExist(() => this.container.destroy());
+    return this.container.destroy();
   }
 
   public async setState(state: "starting" | "stopping" | "deleted") {

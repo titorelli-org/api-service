@@ -1,7 +1,7 @@
 import path from "node:path";
 import { type Logger } from "pino";
 import { Db } from "../Db";
-import { ContainerListResultItem, DockhostService } from "./dockhost";
+import { DockhostService, type ContainerListResultItem } from "./dockhost";
 import { ContainerNameGenerator } from "./ContainerNameGenerator";
 import { BotModel } from "./models";
 import { BotRepository } from "./repositories";
@@ -277,8 +277,9 @@ export class BotsService {
     const items = result.filter(({ name }) => this.nameGenerator.match(name));
 
     for (const bot of bots) {
-      const item = items.find(({ name }) => this.nameGenerator.match(name));
-      if (item == null) {
+      const exist = items.some(({ name }) => name === bot.dockhostContainer);
+
+      if (!exist) {
         await this.markBotAsDeleted(bot);
       }
     }
