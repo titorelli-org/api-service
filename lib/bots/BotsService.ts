@@ -281,6 +281,10 @@ export class BotsService {
       this.nameGenerator.match(name),
     );
 
+    this.logger.info("onPeriodicListResult");
+    this.logger.info("bots = %j", bots);
+    this.logger.info("filteredItems = %j =", filteredItems);
+
     for (const bot of bots) {
       if (bot.state === "created") continue;
 
