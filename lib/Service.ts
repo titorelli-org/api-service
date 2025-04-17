@@ -1010,31 +1010,6 @@ export class Service {
     );
   }
 
-  // private async installBotsConvergeRoute() {
-  //   await this.service.post<{
-  //     Querystring: {
-  //       botId: number;
-  //     };
-  //   }>(
-  //     this.botsConvergePath,
-  //     {
-  //       schema: {
-  //         querystring: {
-  //           type: "object",
-  //           properties: {
-  //             botId: { type: "number" },
-  //           },
-  //         },
-  //       },
-  //     },
-  //     async ({ query: { botId } }) => {
-  //       await this.ready;
-
-  //       return this.bots.convergeFor(botId);
-  //     },
-  //   );
-  // }
-
   private async installBotsLivenessRoute() {
     await this.service.post<{
       Querystring: {

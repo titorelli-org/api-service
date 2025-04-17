@@ -189,8 +189,8 @@ export class BotsService {
     }
   }
 
-  public async get(id: number) {
-    return BotModel.getByExternalId(id, {
+  public async get(externalId: number) {
+    return BotModel.getByExternalId(externalId, {
       nameGenerator: this.nameGenerator,
       dockhost: this.dockhost,
       botRepository: this.botRepository,
@@ -273,11 +273,20 @@ export class BotsService {
   }
 
   private onPeriodicListResult = async (result: ContainerListResultItem[]) => {
-    const bots = await this.db.knex.select<BotRecord[]>("*").from("bot");
-    const items = result.filter(({ name }) => this.nameGenerator.match(name));
+    const bots = await this.db.knex
+      .select<BotRecord[]>("*")
+      .where("state", "<>", "created")
+      .from("bot");
+    const filteredItems = result.filter(({ name }) =>
+      this.nameGenerator.match(name),
+    );
 
     for (const bot of bots) {
-      const exist = items.some(({ name }) => name === bot.dockhostContainer);
+      if (bot.state === "created") continue;
+
+      const exist = filteredItems.some(
+        ({ name }) => name === bot.dockhostContainer,
+      );
 
       if (!exist) {
         await this.markBotAsDeleted(bot);

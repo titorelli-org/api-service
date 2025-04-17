@@ -83,6 +83,8 @@ export class BotModel implements BotRecord {
   }) {
     const dockhostContainer = nameGenerator.generate(accountId, externalId);
 
+    logger.info('dockhostContainer = "%s"', dockhostContainer);
+
     const id = await botRepository.create({
       externalId,
       accessToken,
@@ -95,6 +97,8 @@ export class BotModel implements BotRecord {
       dockhostProject,
       scopes,
     });
+
+    logger.info("Bot record created with id = %s", id);
 
     return new BotModel(
       {
