@@ -265,36 +265,34 @@ export class BotsService {
     return [true, grantedScopes];
   }
 
-  private async markBotAsDeleted(bot: BotRecord) {
-    await this.db
-      .knex("bot")
-      .update<BotRecord>({ state: "deleted" })
-      .where("id", bot.id);
-  }
+  // Do nothing right now
+  // private async markBotAsDeleted(bot: BotRecord) {
+  //   await this.db
+  //     .knex("bot")
+  //     .update<BotRecord>({ state: "deleted" })
+  //     .where("id", bot.id);
+  // }
 
   private onPeriodicListResult = async (result: ContainerListResultItem[]) => {
-    const bots = await this.db.knex
-      .select<BotRecord[]>("*")
-      .where("state", "<>", "created")
-      .from("bot");
-    const filteredItems = result.filter(({ name }) =>
-      this.nameGenerator.match(name),
-    );
-
-    this.logger.info("onPeriodicListResult");
-    this.logger.info("bots = %j", bots);
-    this.logger.info("filteredItems = %j =", filteredItems);
-
-    for (const bot of bots) {
-      if (bot.state === "created") continue;
-
-      const exist = filteredItems.some(
-        ({ name }) => name === bot.dockhostContainer,
-      );
-
-      if (!exist) {
-        await this.markBotAsDeleted(bot);
-      }
-    }
+    // Do nothing right now
+    // const bots = await this.db.knex
+    //   .select<BotRecord[]>("*")
+    //   .where("state", "<>", "created")
+    //   .from("bot");
+    // const filteredItems = result.filter(({ name }) =>
+    //   this.nameGenerator.match(name),
+    // );
+    // this.logger.info("onPeriodicListResult");
+    // this.logger.info("bots = %j", bots);
+    // this.logger.info("filteredItems = %j =", filteredItems);
+    // for (const bot of bots) {
+    //   if (bot.state === "created") continue;
+    //   const exist = filteredItems.some(
+    //     ({ name }) => name === bot.dockhostContainer,
+    //   );
+    //   if (!exist) {
+    //     await this.markBotAsDeleted(bot);
+    //   }
+    // }
   };
 }
