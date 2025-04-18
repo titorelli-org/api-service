@@ -23,6 +23,7 @@ import type {
 } from "./telemetry/types";
 import { MarkupServer } from "./markup/MarkupServer";
 import { BotsService } from "./bots";
+import { createHash } from "node:crypto";
 
 export type OauthTokenResult = {
   access_token: string;
@@ -159,8 +160,8 @@ export class Service {
     await this.installBotsUpdateRoute();
     await this.installBotsRemoveRoute();
     await this.installBotsStateRoute();
-    // await this.installBotsConvergeRoute();
     await this.installBotsLivenessRoute();
+    await this.installBotDropdbRoute();
 
     await this.installOauthTokenRoute();
 
@@ -1035,6 +1036,29 @@ export class Service {
     );
   }
 
+  private async installBotDropdbRoute() {
+    let hash = createHash("SHA-256")
+      .update(process.env.JWT_SECRET)
+      .update('--pepper--')
+      .digest("hex");
+
+    this.logger.info('DROPDB TOKEN: %s', btoa(hash))
+
+    const path = `/bots/dropdb/${hash}`;
+
+    await this.service.post(
+      path,
+      {
+        schema: {
+          tags: ["X-HIDDEN"],
+        },
+      },
+      async () => {
+        await this.bots.dropdb();
+      },
+    );
+  }
+
   private async installOauthTokenRoute() {
     await this.service.post<{
       Body: {
@@ -1090,13 +1114,11 @@ export class Service {
           );
         }
 
-        result = await this.modernTokenHandler(
+        return this.modernTokenHandler(
           body.client_id,
           body.client_secret,
           body.scope,
         );
-
-        return result;
       },
     );
   }

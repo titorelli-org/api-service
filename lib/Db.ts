@@ -21,6 +21,10 @@ export class Db {
     return this._knex;
   }
 
+  public async reinitialize() {
+    await this.initialize();
+  }
+
   private async initialize() {
     if (this._migrationsDir == null) return;
 

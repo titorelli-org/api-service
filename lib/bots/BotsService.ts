@@ -211,6 +211,12 @@ export class BotsService {
     await bot.delete();
   }
 
+  public async dropdb() {
+    await this.db.knex.schema.dropTable("bot");
+
+    await this.db.reinitialize();
+  }
+
   public async reportAlive(clientId: string) {
     const [botId, accountId] = BotModel.parseClientId(clientId);
 
