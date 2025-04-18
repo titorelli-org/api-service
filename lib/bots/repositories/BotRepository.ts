@@ -75,4 +75,8 @@ export class BotRepository {
   public async updateById(id: number, props: UpdateProps) {
     await this.db.knex("bot").update<BotRecord>(props).where("id", id);
   }
+
+  public async removeById(id: number) {
+    await this.db.knex("bot").delete().where("id", id);
+  }
 }

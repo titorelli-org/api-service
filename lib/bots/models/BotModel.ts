@@ -200,6 +200,8 @@ export class BotModel implements BotRecord {
 
     this.logger.info("Deleting bot...");
 
+    await this.botRepository.removeById(this.id);
+
     return this.container.destroy();
   }
 
