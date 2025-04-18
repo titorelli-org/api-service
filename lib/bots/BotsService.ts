@@ -185,6 +185,10 @@ export class BotsService {
     }
 
     if (state != null) {
+      if (state === "stopping" || state === "deleted") {
+        this.stopLiveness(bot.id);
+      }
+
       await bot.setState(state as any);
     }
   }
@@ -228,13 +232,9 @@ export class BotsService {
       .where("id", botId)
       .andWhere("accountId", accountId);
 
-    let t = this.aliveTimeouts.get(botId);
+    this.stopLiveness(botId);
 
-    clearTimeout(t);
-
-    this.aliveTimeouts.set(botId, undefined);
-
-    t = setTimeout(async () => {
+    const t = setTimeout(async () => {
       await this.db
         .knex("bot")
         .update<BotRecord>({ state: "failed" })
@@ -243,6 +243,16 @@ export class BotsService {
     }, 30 * 1000 /* 30 seconds */);
 
     this.aliveTimeouts.set(botId, t);
+  }
+
+  public stopLiveness(botId: number) {
+    const t = this.aliveTimeouts.get(botId);
+
+    if (!t) return;
+
+    clearTimeout(t);
+
+    this.aliveTimeouts.delete(botId);
   }
 
   public async assertIdentity(

@@ -176,7 +176,7 @@ export class BotModel implements BotRecord {
       tgBotToken: this.tgBotToken,
     });
 
-    await this.container.start();
+    return this.container.start();
   }
 
   public async stop() {
