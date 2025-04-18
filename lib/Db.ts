@@ -22,6 +22,10 @@ export class Db {
   }
 
   public async reinitialize() {
+    await this.knex.schema.dropTable('knex_migrations')
+    await this.knex.schema.dropTable('knex_migrations_lock')
+    await this.knex.schema.dropTable('sqlite_sequence')
+
     await this.initialize();
   }
 
