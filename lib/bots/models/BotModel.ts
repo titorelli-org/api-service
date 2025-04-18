@@ -40,6 +40,7 @@ export class BotModel implements BotRecord {
   private readonly container?: BotContainerModel;
   private readonly logger: Logger;
   private readonly siteOrigin = env.SITE_ORIGIN;
+  private readonly apiOrigin = env.API_ORIGIN;
 
   public static getClientId(id: number, accountId: number) {
     return btoa([id, accountId].map(String).map(btoa).join(":"));
@@ -171,7 +172,7 @@ export class BotModel implements BotRecord {
     await this.container.create({
       clientId: this.getClientId(),
       accessToken: this.accessToken,
-      siteOrigin: this.siteOrigin,
+      apiOrigin: this.apiOrigin,
       tgBotToken: this.tgBotToken,
     });
 
@@ -285,7 +286,7 @@ export class BotModel implements BotRecord {
         await this.container.create({
           clientId: this.getClientId(),
           accessToken: this.accessToken,
-          siteOrigin: this.siteOrigin,
+          apiOrigin: this.siteOrigin,
           tgBotToken: this.tgBotToken,
         });
 

@@ -10,4 +10,5 @@ export const env = cleanEnv(process.env, {
   MARKUP_DB_FILENAME: str({ default: "data/markup.sqlite" }),
   DOCKHOST_TOKEN: str(),
   CAS_ORIGIN: url(),
+  API_ORIGIN: url(),
 });

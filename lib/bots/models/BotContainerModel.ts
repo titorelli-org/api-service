@@ -33,12 +33,12 @@ export class BotContainerModel {
   public async create({
     clientId,
     accessToken,
-    siteOrigin,
+    apiOrigin,
     tgBotToken,
   }: {
     clientId: string;
     accessToken: string;
-    siteOrigin: string;
+    apiOrigin: string;
     tgBotToken: string;
   }) {
     return this.ifExist(
@@ -58,7 +58,7 @@ export class BotContainerModel {
           variable: {
             TITORELLI_CLIENT_ID: clientId,
             TITORELLI_ACCESS_TOKEN: accessToken,
-            TITORELLI_HOST: siteOrigin,
+            TITORELLI_HOST: apiOrigin,
             BOT_TOKEN: tgBotToken,
           },
         };
