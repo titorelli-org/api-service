@@ -79,4 +79,8 @@ export class BotRepository {
   public async removeById(id: number) {
     await this.db.knex("bot").delete().where("id", id);
   }
+
+  public async setStateById(id: number, state: BotRecord["state"]) {
+    await this.db.knex.update({ state }).into("bot").where("id", id);
+  }
 }

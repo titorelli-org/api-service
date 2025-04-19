@@ -169,6 +169,10 @@ export class BotModel implements BotRecord {
 
     this.logger.info("Starting bot...");
 
+    Reflect.set(this, "state", "starting");
+
+    await this.botRepository.setStateById(this.id, "starting");
+
     await this.container.create({
       clientId: this.getClientId(),
       accessToken: this.accessToken,
@@ -184,6 +188,10 @@ export class BotModel implements BotRecord {
 
     this.logger.info("Stopping bot...");
 
+    Reflect.set(this, "state", "stopping");
+
+    await this.botRepository.setStateById(this.id, "stopping");
+
     return this.container.stop();
   }
 
@@ -192,8 +200,8 @@ export class BotModel implements BotRecord {
 
     this.logger.info("Restarting bot...");
 
-    await this.container.stop();
-    await this.container.start();
+    await this.stop();
+    await this.start();
   }
 
   public async delete() {
