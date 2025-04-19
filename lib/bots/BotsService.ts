@@ -281,34 +281,52 @@ export class BotsService {
     return [true, grantedScopes];
   }
 
-  // Do nothing right now
-  // private async markBotAsDeleted(bot: BotRecord) {
-  //   await this.db
-  //     .knex("bot")
-  //     .update<BotRecord>({ state: "deleted" })
-  //     .where("id", bot.id);
-  // }
+  private async markBotAsDeleted(botId: number) {
+    await this.db
+      .knex("bot")
+      .update<BotRecord>({ state: "deleted" })
+      .where("id", botId);
+  }
+
+  private async markBotAsStopped(botId: number) {
+    await this.db
+      .knex("bot")
+      .update<BotRecord>({ state: "stopped" })
+      .where("id", botId);
+  }
+
+  private async checkIfBotStopped(botId: number) {
+    const bot = await BotModel.getById(botId, {
+      nameGenerator: this.nameGenerator,
+      dockhost: this.dockhost,
+      botRepository: this.botRepository,
+      logger: this.logger,
+    });
+    const containerStatus = await bot.getContainerStatus();
+
+    if (containerStatus === "paused" || containerStatus === "stopped") {
+      await this.markBotAsStopped(botId);
+    }
+  }
 
   private onPeriodicListResult = async (result: ContainerListResultItem[]) => {
-    // Do nothing right now
-    // const bots = await this.db.knex
-    //   .select<BotRecord[]>("*")
-    //   .where("state", "<>", "created")
-    //   .from("bot");
-    // const filteredItems = result.filter(({ name }) =>
-    //   this.nameGenerator.match(name),
-    // );
-    // this.logger.info("onPeriodicListResult");
-    // this.logger.info("bots = %j", bots);
-    // this.logger.info("filteredItems = %j =", filteredItems);
-    // for (const bot of bots) {
-    //   if (bot.state === "created") continue;
-    //   const exist = filteredItems.some(
-    //     ({ name }) => name === bot.dockhostContainer,
-    //   );
-    //   if (!exist) {
-    //     await this.markBotAsDeleted(bot);
-    //   }
-    // }
+    const bots = await this.db.knex.select<BotRecord[]>("*").from("bot");
+    const filteredItems = result.filter(({ name }) =>
+      this.nameGenerator.match(name),
+    );
+
+    for (const bot of bots) {
+      if (bot.state === "created") continue;
+
+      const exist = filteredItems.some(
+        ({ name }) => name === bot.dockhostContainer,
+      );
+
+      if (exist) {
+        await this.checkIfBotStopped(bot.id);
+      } else {
+        await this.markBotAsDeleted(bot.id);
+      }
+    }
   };
 }

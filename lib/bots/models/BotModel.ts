@@ -253,6 +253,10 @@ export class BotModel implements BotRecord {
     return this.sheduleHardReload();
   }
 
+  public async getContainerStatus() {
+    return this.container.getContainerStatus();
+  }
+
   public toJSON() {
     return {
       id: this.externalId,

@@ -102,4 +102,13 @@ export class BotContainerModel {
       },
     );
   }
+
+  public async getContainerStatus() {
+    const listItems = await this.dockhost.listContainer(this.project);
+    const item = listItems.find(({ name }) => this.name);
+
+    if (!item) return null;
+
+    return item.status;
+  }
 }
