@@ -323,7 +323,9 @@ export class BotsService {
       );
 
       if (exist) {
-        await this.checkIfBotStopped(bot.id);
+        if (bot.state === 'running') {
+          await this.checkIfBotStopped(bot.id);
+        }
       } else {
         await this.markBotAsDeleted(bot.id);
       }
