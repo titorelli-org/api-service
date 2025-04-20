@@ -131,7 +131,7 @@ export class Service {
   }
 
   private async initialize() {
-    this.service = fastify({ loggerInstance: this.logger });
+    this.service = fastify({ loggerInstance: this.logger, trustProxy: true });
 
     await this.installPluginsBegin();
 
@@ -1039,10 +1039,10 @@ export class Service {
   private async installBotDropdbRoute() {
     let hash = createHash("SHA-256")
       .update(process.env.JWT_SECRET)
-      .update('--pepper--')
+      .update("--pepper--")
       .digest("hex");
 
-    this.logger.info('DROPDB TOKEN: %s', btoa(hash))
+    this.logger.info("DROPDB TOKEN: %s", btoa(hash));
 
     const path = `/bots/dropdb/${hash}`;
 
