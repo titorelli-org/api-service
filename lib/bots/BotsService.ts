@@ -79,7 +79,7 @@ export class BotsService {
         dataProvider: async () =>
           this.dockhost.listContainer(this.baseDockhostProject),
         errorHandler: (error) => this.logger.error(error),
-        interval: 1200,
+        interval: 3 * 1000 /* 3 seconds */,
       });
     }
 
@@ -327,7 +327,7 @@ export class BotsService {
     for (const bot of bots) {
       console.log(322, "bot.state:", bot.state);
 
-      if (bot.state === "created") continue;
+      if (["created", "starting"].includes(bot.state)) continue;
 
       const exists = filteredItems.some(
         ({ name }) => name === bot.dockhostContainer,

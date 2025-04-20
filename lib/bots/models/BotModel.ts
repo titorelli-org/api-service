@@ -171,14 +171,14 @@ export class BotModel implements BotRecord {
 
     Reflect.set(this, "state", "starting");
 
-    await this.botRepository.setStateById(this.id, "starting");
-
     await this.container.create({
       clientId: this.getClientId(),
       accessToken: this.accessToken,
       apiOrigin: this.apiOrigin,
       tgBotToken: this.tgBotToken,
     });
+
+    await this.botRepository.setStateById(this.id, "starting");
 
     return this.container.start();
   }
