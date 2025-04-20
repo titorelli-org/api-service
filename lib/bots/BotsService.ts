@@ -329,7 +329,7 @@ export class BotsService {
       );
 
       if (exists) {
-        if (bot.state === "running") {
+        if (["running", "stopping"].includes(bot.state)) {
           await this.checkIfBotStopped(bot.id);
         }
       } else {
