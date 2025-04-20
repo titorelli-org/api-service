@@ -282,6 +282,8 @@ export class BotsService {
   }
 
   private async markBotAsDeleted(botId: number) {
+    console.log("markBotAsDeleted(botId)", "botId:", botId);
+
     await this.db
       .knex("bot")
       .update<BotRecord>({ state: "deleted" })
@@ -289,6 +291,8 @@ export class BotsService {
   }
 
   private async markBotAsStopped(botId: number) {
+    console.log("markBotAsStopped(botId)", "botId:", botId);
+
     await this.db
       .knex("bot")
       .update<BotRecord>({ state: "stopped" })
@@ -296,6 +300,8 @@ export class BotsService {
   }
 
   private async checkIfBotStopped(botId: number) {
+    console.log("checkIfBotStopped(botId)", "botId:", botId);
+
     const bot = await BotModel.getBotById(botId, {
       nameGenerator: this.nameGenerator,
       dockhost: this.dockhost,
@@ -315,18 +321,31 @@ export class BotsService {
       this.nameGenerator.match(name),
     );
 
+    console.log("bots:", bots);
+    console.log("filteredItems:", filteredItems);
+
     for (const bot of bots) {
+      console.log(322, "bot.state:", bot.state);
+
       if (bot.state === "created") continue;
 
-      const exist = filteredItems.some(
+      const exists = filteredItems.some(
         ({ name }) => name === bot.dockhostContainer,
       );
 
-      if (exist) {
-        if (bot.state === 'running') {
+      console.log(330, "exists:", exists);
+
+      if (exists) {
+        console.log(333, "bot.state:", bot.state);
+
+        if (bot.state === "running") {
+          console.log(336, 'bot.state === "running"');
+
           await this.checkIfBotStopped(bot.id);
         }
       } else {
+        console.log("341", "not exists");
+
         await this.markBotAsDeleted(bot.id);
       }
     }
