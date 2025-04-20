@@ -5,6 +5,7 @@ import type { BotRecord } from "../BotsService";
 import type { ContainerNameGenerator } from "../ContainerNameGenerator";
 import type { DockhostService } from "../dockhost";
 import type { BotRepository } from "../repositories";
+import { maskNumber, unmaskNumber } from "../../keymask";
 
 export type BotModelConfig = {
   nameGenerator: ContainerNameGenerator;
@@ -43,7 +44,7 @@ export class BotModel implements BotRecord {
   private readonly apiOrigin = env.API_ORIGIN;
 
   public static getClientId(id: number, accountId: number) {
-    return btoa([id, accountId].map(String).map(btoa).join(":"));
+    return btoa([id, accountId].map((v) => maskNumber(v)).join(":"));
   }
 
   public static parseClientId(clientId: string) {
@@ -125,7 +126,7 @@ export class BotModel implements BotRecord {
     );
   }
 
-  public static async getById(id: number, config: BotModelConfig) {
+  public static async getBotById(id: number, config: BotModelConfig) {
     const record = await config.botRepository.getById(id);
 
     return record ? new BotModel(record, config) : null;
@@ -143,10 +144,9 @@ export class BotModel implements BotRecord {
   public static async getByClientId(clientId: string, config: BotModelConfig) {
     const [id] = atob(clientId)
       .split(":")
-      .map((s) => atob(s))
-      .map(Number) as [number, number];
+      .map((s) => unmaskNumber(s));
 
-    return this.getById(id, config);
+    return this.getBotById(id, config);
   }
 
   constructor(record: BotRecord, config: BotModelConfig) {
@@ -292,7 +292,7 @@ export class BotModel implements BotRecord {
     try {
       this.hardReloading = true;
 
-      return this.container.ifExist(async () => {
+      return this.container.ifExists(async () => {
         await this.container.destroy();
 
         await this.container.create({

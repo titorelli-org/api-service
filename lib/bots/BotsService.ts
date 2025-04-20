@@ -140,7 +140,7 @@ export class BotsService {
 
     return Promise.all(
       records.map(({ id }) =>
-        BotModel.getById(id, {
+        BotModel.getBotById(id, {
           nameGenerator: this.nameGenerator,
           dockhost: this.dockhost,
           botRepository: this.botRepository,
@@ -296,7 +296,7 @@ export class BotsService {
   }
 
   private async checkIfBotStopped(botId: number) {
-    const bot = await BotModel.getById(botId, {
+    const bot = await BotModel.getBotById(botId, {
       nameGenerator: this.nameGenerator,
       dockhost: this.dockhost,
       botRepository: this.botRepository,

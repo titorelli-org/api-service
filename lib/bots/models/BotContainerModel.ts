@@ -1,5 +1,5 @@
 import type { Logger } from "pino";
-import type { DockhostService } from "../dockhost";
+import { ContainerInstanceStatus, type DockhostService } from "../dockhost";
 
 export type BotContainerModelConfig = {
   name: string;
@@ -20,14 +20,14 @@ export class BotContainerModel {
     Object.assign(this, config);
   }
 
-  public async exist() {
+  public async exists() {
     const containers = await this.dockhost.listContainer(this.project);
 
     return containers.some(({ name }) => name === this.name);
   }
 
-  public async ifExist(trueCallback?: () => void, falseCallback?: () => void) {
-    return (await this.exist()) ? trueCallback?.() : falseCallback?.();
+  public async ifExists<TR, FR>(trueCallback?: () => Promise<TR>, falseCallback?: () => Promise<FR>) {
+    return (await this.exists()) ? trueCallback?.() : falseCallback?.();
   }
 
   public async create({
@@ -41,7 +41,7 @@ export class BotContainerModel {
     apiOrigin: string;
     tgBotToken: string;
   }) {
-    return this.ifExist(
+    return this.ifExists(
       () => {
         this.logger.warn(
           "Container creation attempt when container already exists",
@@ -71,7 +71,7 @@ export class BotContainerModel {
   }
 
   public async start() {
-    return this.ifExist(
+    return this.ifExists(
       () => this.dockhost.scaleContainer(this.name, 1, this.project),
       () => {
         this.logger.warn("Attempt to start container that not exits");
@@ -82,7 +82,7 @@ export class BotContainerModel {
   }
 
   public async stop() {
-    return this.ifExist(
+    return this.ifExists(
       () => this.dockhost.scaleContainer(this.name, 0, this.project),
       () => {
         this.logger.warn("Attempt to stop container that not exist");
@@ -93,7 +93,7 @@ export class BotContainerModel {
   }
 
   public async destroy() {
-    return this.ifExist(
+    return this.ifExists(
       () => this.dockhost.deleteContainer(this.project, this.name),
       () => {
         this.logger.warn("Attempt to destroy container that not exist");
@@ -104,11 +104,20 @@ export class BotContainerModel {
   }
 
   public async getContainerStatus() {
-    const listItems = await this.dockhost.listContainer(this.project);
-    const item = listItems.find(({ name }) => this.name);
+    return this.ifExists<ContainerInstanceStatus, null>(
+      async () => {
+        const listItems = await this.dockhost.listContainer(this.project);
+        const item = listItems.find(({ name }) => this.name === name);
 
-    if (!item) return null;
+        if (!item) return null;
 
-    return item.status;
+        return item.status;
+      },
+      () => {
+        this.logger.warn("Attempt to get state of non-existing container");
+
+        return null;
+      },
+    );
   }
 }
