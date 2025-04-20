@@ -321,31 +321,18 @@ export class BotsService {
       this.nameGenerator.match(name),
     );
 
-    console.log("bots:", bots);
-    console.log("filteredItems:", filteredItems);
-
     for (const bot of bots) {
-      console.log(322, "bot.state:", bot.state);
-
       if (["created", "starting"].includes(bot.state)) continue;
 
       const exists = filteredItems.some(
         ({ name }) => name === bot.dockhostContainer,
       );
 
-      console.log(330, "exists:", exists);
-
       if (exists) {
-        console.log(333, "bot.state:", bot.state);
-
         if (bot.state === "running") {
-          console.log(336, 'bot.state === "running"');
-
           await this.checkIfBotStopped(bot.id);
         }
       } else {
-        console.log("341", "not exists");
-
         await this.markBotAsDeleted(bot.id);
       }
     }

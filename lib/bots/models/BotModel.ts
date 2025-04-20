@@ -50,8 +50,7 @@ export class BotModel implements BotRecord {
   public static parseClientId(clientId: string) {
     return atob(clientId)
       .split(":")
-      .map((s) => atob(s))
-      .map(Number) as [number, number];
+      .map((s) => unmaskNumber(s));
   }
 
   public static async create({
