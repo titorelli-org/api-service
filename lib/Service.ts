@@ -1,29 +1,13 @@
+import { createHash } from "node:crypto";
 import fastify, { type FastifyInstance } from "fastify";
+import type { Logger } from "pino";
 import fastifyFormbody from "@fastify/formbody";
 import fastifyJwt, { type FastifyJwtNamespace } from "@fastify/jwt";
 import fastifySwagger from "@fastify/swagger";
 import fastifySwaggerUi from "@fastify/swagger-ui";
-import type { Logger } from "pino";
-import type {
-  EnsembleModel,
-  LabeledExample,
-  Prediction,
-  TemporaryStorage,
-  IModel,
-  ITotems,
-  ICas,
-} from "./model";
+import type { LabeledExample, Prediction, IModel, ICas } from "./model";
 import type { ServiceAuthClient } from "./types";
-import { TelemetryServer } from "./telemetry/TelemetryServer";
-import type {
-  ChatInfo,
-  MessageInfo,
-  SelfInfo,
-  UserInfo,
-} from "./telemetry/types";
-import { MarkupServer } from "./markup/MarkupServer";
 import { BotsService } from "./bots";
-import { createHash } from "node:crypto";
 
 export type OauthTokenResult = {
   access_token: string;
@@ -41,12 +25,9 @@ export type ServiceConfig = {
   port: number;
   host: string;
   logger: Logger;
-  modelsStore: TemporaryStorage<IModel, [string]>;
   cas: ICas;
-  totemsStore: TemporaryStorage<ITotems, [string]>;
+  model: IModel;
   jwtSecret: string;
-  telemetry: TelemetryServer;
-  markup: MarkupServer;
   bots: BotsService;
   oauthClients: ServiceAuthClient[];
 };
@@ -58,16 +39,13 @@ export type JwtTokenPayload = {
 
 export class Service {
   private logger: Logger;
-  private modelsStore: TemporaryStorage<IModel, [string]>;
   private cas: ICas;
-  private totemsStore: TemporaryStorage<ITotems, [string]>;
+  private model: IModel;
   private service: FastifyInstance;
   private port: number;
   private host: string;
   private jwtSecret: string;
   private oauthClients: ServiceAuthClient[];
-  private telemetry: TelemetryServer;
-  private markup: MarkupServer;
   private bots: BotsService;
   private ready: Promise<void>;
   private modelPredictPath = "/models/:modelId/predict";
@@ -75,15 +53,6 @@ export class Service {
   private modelTrainBulkPath = "/models/:modelId/train_bulk";
   private modelExactMatchTrainPath = "/models/:modelId/exact_match/train";
   private modelTotemsTrainPath = "/models/:modelId/totems/train";
-  private telemetryTrackBotInfoPath = "/telemetry/track_bot";
-  private telemetryTrackMemberInfoPath = "/telemetry/track_member";
-  private telemetryTrackChatInfoPath = "/telemetry/track_chat";
-  private telemetryTrackMessagePath = "/telemetry/track_message";
-  private telemetryTrackPredictionPath = "/telemetry/track_prediction";
-  private markupChatsPath = "/markup/chats";
-  private markupExamplesPath = "/markup/examples";
-  private markupLabelsPath = "/markup/labels";
-  private markupMemberPath = "/markup/members/:memberId";
   private casPredictPath = "/cas/predict";
   private casTrainPath = "/cas/train";
   private botsCreatePath = "/bots";
@@ -91,7 +60,6 @@ export class Service {
   private botsUpdatePath = "/bots/:botExtrnalId";
   private botsStatePath = "/bots/:botExtrnalId/state";
   private botsRemovePath = "/bots/:botExtrnalId";
-  // private botsConvergePath = "/bots/converge"; // TODO: Remove
   private botsLivenessPath = "/bots/liveness";
   private ouathTokenPath = "/oauth2/token";
 
@@ -99,24 +67,18 @@ export class Service {
     port,
     host,
     logger,
-    modelsStore,
+    model,
     cas,
-    totemsStore,
     jwtSecret,
-    telemetry,
-    markup,
     bots,
     oauthClients,
   }: ServiceConfig) {
     this.logger = logger;
-    this.modelsStore = modelsStore;
     this.cas = cas;
-    this.totemsStore = totemsStore;
+    this.model = model;
     this.port = port;
     this.host = host;
     this.jwtSecret = jwtSecret;
-    this.telemetry = telemetry;
-    this.markup = markup;
     this.bots = bots;
     this.oauthClients = oauthClients;
     this.ready = this.initialize();
@@ -143,17 +105,6 @@ export class Service {
 
     await this.installCasPredictRoute();
     await this.installCasTrainRoute();
-
-    await this.installTelemetryTrackBotInfo();
-    await this.installTelemetryTrackMemberInfo();
-    await this.installTelemetryTrackChatInfo();
-    await this.installTelemetryTrackMessage();
-    await this.installTelemetryTrackPrediction();
-
-    await this.installMarkupChats();
-    await this.installMarkupExamples();
-    await this.installMarkupLabels();
-    await this.installMarkupMembers();
 
     await this.installBotsCreateRoute();
     await this.installBotsListRoute();
@@ -285,22 +236,14 @@ export class Service {
         } = req;
 
         if (tgUserId != null) {
-          {
-            const casPrediction = await this.checkCas(tgUserId);
+          const casPrediction = await this.checkCas(tgUserId);
 
-            if (casPrediction != null) return casPrediction;
-          }
-
-          {
-            const totemPrediction = await this.checkTotem(modelId, tgUserId);
-
-            if (totemPrediction != null) return totemPrediction;
+          if (casPrediction != null) {
+            return casPrediction;
           }
         }
 
-        const model = await this.modelsStore.getOrCreate(modelId);
-
-        return model.predict({ text });
+        return this.model.predict({ text });
       },
     );
   }
@@ -308,26 +251,9 @@ export class Service {
   private async checkCas(tgUserId: number): Promise<Prediction | null> {
     if (await this.cas.has(tgUserId)) {
       return {
-        value: "spam",
+        label: "spam",
         confidence: 1,
         reason: "cas",
-      };
-    }
-
-    return null;
-  }
-
-  private async checkTotem(
-    modelId: string,
-    tgUserId: number,
-  ): Promise<Prediction | null> {
-    const totems = await this.totemsStore.getOrCreate(modelId);
-
-    if (await totems.has(tgUserId)) {
-      return {
-        value: "ham",
-        confidence: 1,
-        reason: "totem",
       };
     }
 
@@ -362,12 +288,10 @@ export class Service {
           },
         },
       },
-      async ({ params: { modelId }, body: { text, label } }) => {
+      async ({ params: { modelId: _modelId }, body: { text, label } }) => {
         await this.ready;
 
-        const model = await this.modelsStore.getOrCreate(modelId);
-
-        await model.train({ text, label });
+        await this.model.train({ text, label });
       },
     );
   }
@@ -407,13 +331,11 @@ export class Service {
         await this.ready;
 
         const {
-          params: { modelId },
+          params: { modelId: _modelId },
           body: examples,
         } = req;
 
-        const model = await this.modelsStore.getOrCreate(modelId);
-
-        await model.trainBulk(examples);
+        await this.model.trainBulk(examples);
       },
     );
   }
@@ -447,17 +369,10 @@ export class Service {
           },
         },
       },
-      async ({ params: { modelId }, body }) => {
+      async ({ params: { modelId: _modelId }, body: _body }) => {
         await this.ready;
 
-        const ensemble = (await this.modelsStore.getOrCreate(
-          modelId,
-        )) as Awaited<EnsembleModel>;
-        const emModel = ensemble.getModelByType("exact-match");
-
-        if (!emModel) return null;
-
-        await emModel.train(body);
+        throw new Error("Not implemented yet");
       },
     );
   }
@@ -489,12 +404,10 @@ export class Service {
           },
         },
       },
-      async ({ params: { modelId }, body: { tgUserId } }) => {
+      async ({ params: { modelId: _modelId }, body: { tgUserId } }) => {
         await this.ready;
 
-        const totems = await this.totemsStore.getOrCreate(modelId);
-
-        await totems.add(tgUserId);
+        await this.cas.remove(tgUserId);
       },
     );
   }
@@ -558,305 +471,6 @@ export class Service {
         await this.ready;
 
         await this.cas.add(tgUserId);
-      },
-    );
-  }
-
-  private async installTelemetryTrackBotInfo() {
-    await this.service.post<{
-      Body: SelfInfo;
-    }>(
-      this.telemetryTrackBotInfoPath,
-      {
-        // onRequest: [this.verifyToken],
-        schema: {
-          body: {
-            type: "object",
-            properties: {
-              id: { type: "number" },
-              firstName: { type: "string" },
-              lastName: { type: "string" },
-              username: { type: "string" },
-              languageCode: { type: "string" },
-              isPremium: { type: "boolean" },
-              addedToAttachmentMenu: { type: "boolean" },
-              isBot: { type: "boolean" },
-              canJoinGroups: { type: "boolean" },
-              canReadAllGroupMessages: { type: "boolean" },
-              supportsInlineQueries: { type: "boolean" },
-            },
-          },
-        },
-      },
-      async ({ body }) => {
-        await this.ready;
-
-        await this.telemetry.trackSelfBotInfo(body);
-      },
-    );
-  }
-
-  private async installTelemetryTrackMemberInfo() {
-    await this.service.post<{ Body: UserInfo }>(
-      this.telemetryTrackMemberInfoPath,
-      {
-        /*onRequest: [this.verifyToken],*/ schema: {
-          body: {
-            type: "object",
-            properties: {
-              id: { type: "number" },
-              isBot: { type: "boolean" },
-              firstName: { type: "string" },
-              lastName: { type: "string" },
-              username: { type: "string" },
-              languageCode: { type: "string" },
-              isPremium: { type: "boolean" },
-              addedToAttachmentMenu: { type: "boolean" },
-              reporterTgBotId: { type: "number" },
-            },
-          },
-        },
-      },
-      async ({ body }) => {
-        await this.ready;
-
-        await this.markup.insertMember({
-          tgUserId: body.id,
-          languageCode: body.languageCode,
-          isPremium: body.isPremium,
-        });
-
-        await this.telemetry.trackMemberInfo(body);
-      },
-    );
-  }
-
-  private async installTelemetryTrackChatInfo() {
-    await this.service.post<{ Body: ChatInfo }>(
-      this.telemetryTrackChatInfoPath,
-      {
-        // onRequest: [this.verifyToken],
-        schema: {
-          body: {
-            type: "object",
-            properties: {
-              id: { type: "number" },
-              type: { enum: ["private", "group", "supergroup", "channel"] },
-              username: { type: "string" },
-              title: { type: "string" },
-              firstName: { type: "string" },
-              lastName: { type: "string" },
-              isForum: { type: "boolean" },
-              description: { type: "string" },
-              bio: { type: "string" },
-              reporterTgBotId: { type: "number" },
-            },
-          },
-        },
-      },
-      async ({ body }) => {
-        await this.ready;
-
-        await this.markup.upsertChat(body.reporterTgBotId, body.id, body.title);
-
-        await this.telemetry.trackChat(body);
-      },
-    );
-  }
-
-  private async installTelemetryTrackMessage() {
-    await this.service.post<{ Body: MessageInfo }>(
-      this.telemetryTrackMessagePath,
-      {
-        // onRequest: [this.verifyToken],
-        schema: {
-          body: {
-            type: "object",
-            properties: {
-              id: { type: "number" },
-              type: { enum: ["text", "media"] },
-              threadId: { type: "number" },
-              fromTgUserId: { type: "number" },
-              senderTgChatId: { type: "number" },
-              date: { type: "number" },
-              tgChatId: { type: "number" },
-              isTopic: { type: "boolean" },
-              text: { type: "string" },
-              caption: { type: "string" },
-              reporterTgBotId: { type: "number" },
-            },
-          },
-        },
-      },
-      async ({ body }) => {
-        await this.ready;
-
-        await this.markup.insertExample({
-          tgMessageId: body.id,
-          tgChatId: body.tgChatId,
-          date: body.date,
-          text: body.text,
-          caption: body.caption,
-        });
-
-        await this.telemetry.trackMessage(body);
-      },
-    );
-  }
-
-  private async installTelemetryTrackPrediction() {
-    await this.service.post<{
-      Body: Omit<Prediction, "reason"> &
-        Partial<Pick<Prediction, "reason">> & {
-          tgMessageId: number;
-          tgChatId: number;
-          reporterTgBotId: number;
-        };
-    }>(
-      this.telemetryTrackPredictionPath,
-      {
-        // onRequest: [this.verifyToken],
-        schema: {
-          body: {
-            type: "object",
-            properties: {
-              tgMessageId: { type: "number" },
-              tgChatId: { type: "number" },
-              reason: { enum: ["classifier", "duplicate", "totem", "cas"] },
-              value: { enum: ["spam", "ham"] },
-              confidence: { type: "number" },
-              reporterTgBotId: { type: "number" },
-            },
-          },
-        },
-      },
-      async ({ body }) => {
-        await this.markup.insertLabel({
-          tgMessageId: body.tgMessageId,
-          tgChatId: body.tgChatId,
-          label: body.value,
-          issuer: body.reason,
-        });
-
-        await this.telemetry.trackPrediction(
-          body.tgMessageId,
-          body,
-          body.reporterTgBotId,
-        );
-      },
-    );
-  }
-
-  private async installMarkupChats() {
-    await this.service.get<{
-      Querystring: {
-        tgBotId: number;
-      };
-    }>(
-      this.markupChatsPath,
-      {
-        schema: {
-          querystring: {
-            type: "object",
-            required: ["tgBotId"],
-            properties: {
-              tgBotId: { type: "number" },
-            },
-          },
-        },
-      },
-      async ({ query: { tgBotId } }) => {
-        await this.ready;
-
-        const chats = await this.markup.listChatsByBotId(tgBotId);
-
-        return Promise.all(
-          chats.map(async (chat) =>
-            Object.assign(chat, {
-              latestExample: await this.markup.getExampleByTgMessageId(
-                chat.latestTgMessageId,
-              ),
-            }),
-          ),
-        );
-      },
-    );
-  }
-
-  private async installMarkupExamples() {
-    await this.service.get<{
-      Querystring: {
-        tgChatId: number;
-      };
-    }>(
-      this.markupExamplesPath,
-      {
-        schema: {
-          querystring: {
-            type: "object",
-            required: ["tgChatId"],
-            properties: {
-              tgChatId: { type: "number" },
-            },
-          },
-        },
-      },
-      async ({ query: { tgChatId } }) => {
-        await this.ready;
-
-        return this.markup.listExamplesByChatId(tgChatId);
-      },
-    );
-  }
-
-  private async installMarkupLabels() {
-    await this.service.get<{
-      Querystring: {
-        tgMessageId: number;
-        issuer: string;
-      };
-    }>(
-      this.markupLabelsPath,
-      {
-        schema: {
-          querystring: {
-            type: "object",
-            required: ["tgMessageId", "issuer"],
-            properties: {
-              tgMessageId: { type: "number" },
-              issuer: { type: "string" },
-            },
-          },
-        },
-      },
-      async ({ query: { tgMessageId, issuer } }) => {
-        return this.markup.listLabelsByMessageIdAndIssuer(tgMessageId, issuer);
-      },
-    );
-  }
-
-  private async installMarkupMembers() {
-    await this.service.get<{
-      Querystring: {
-        tgUserId: number;
-      };
-    }>(
-      this.markupMemberPath,
-      {
-        schema: {
-          querystring: {
-            type: "object",
-            required: ["tgUserId"],
-            properties: {
-              tgUserId: { type: "number" },
-            },
-          },
-        },
-      },
-      async ({ query: { tgUserId } }) => {
-        await this.ready;
-
-        return this.markup.getMemberByTgUserId(tgUserId);
       },
     );
   }

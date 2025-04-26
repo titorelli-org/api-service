@@ -42,4 +42,18 @@ export class RemoteAntispam implements ICas {
       this.logger.error(error);
     }
   }
+
+  async remove(tgUserId: number): Promise<void> {
+    try {
+      const url = new URL("/train", this.baseUrl);
+
+      await fetch(url, {
+        method: "POST",
+        body: JSON.stringify({ tgUserId, banned: false }),
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (error) {
+      this.logger.error(error);
+    }
+  }
 }

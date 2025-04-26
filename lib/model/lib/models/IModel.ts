@@ -8,14 +8,4 @@ export interface IModel {
   train(example: LabeledExample): Promise<void>
 
   trainBulk(examples: LabeledExample[]): Promise<void>
-
-  /**
-   * Callback invoked when model removed from store
-   */
-  onRemoved(): void
-
-  /**
-   * Callback invoked when model instance created in store
-   */
-  onCreated(): void
 }

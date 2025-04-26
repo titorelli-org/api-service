@@ -282,8 +282,6 @@ export class BotsService {
   }
 
   private async markBotAsDeleted(botId: number) {
-    console.log("markBotAsDeleted(botId)", "botId:", botId);
-
     await this.db
       .knex("bot")
       .update<BotRecord>({ state: "deleted" })
