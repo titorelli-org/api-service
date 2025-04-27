@@ -14,7 +14,9 @@ export class RemoteModel implements IModel {
       headers: { "Content-Type": "application/json" },
     });
 
-    return resp.json();
+    const result = await resp.json();
+
+    return result;
   }
 
   async train({ text, label }: LabeledExample): Promise<void> {

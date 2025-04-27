@@ -289,8 +289,6 @@ export class BotsService {
   }
 
   private async markBotAsStopped(botId: number) {
-    console.log("markBotAsStopped(botId)", "botId:", botId);
-
     await this.db
       .knex("bot")
       .update<BotRecord>({ state: "stopped" })
@@ -298,8 +296,6 @@ export class BotsService {
   }
 
   private async checkIfBotStopped(botId: number) {
-    console.log("checkIfBotStopped(botId)", "botId:", botId);
-
     const bot = await BotModel.getBotById(botId, {
       nameGenerator: this.nameGenerator,
       dockhost: this.dockhost,

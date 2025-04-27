@@ -221,7 +221,7 @@ export class Service {
               type: "object",
               properties: {
                 reason: { enum: ["classifier", "duplicate", "totem", "cas"] },
-                value: { enum: ["spam", "ham"] },
+                label: { enum: ["spam", "ham"] },
                 confidence: { type: "number" },
               },
             },
@@ -243,8 +243,10 @@ export class Service {
             return casPrediction;
           }
         }
+        
+        const result = await this.model.predict({ text });
 
-        return this.model.predict({ text });
+        return result;
       },
     );
   }
