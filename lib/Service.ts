@@ -236,14 +236,22 @@ export class Service {
           body: { text, tgUserId },
         } = req;
 
+        this.logger.info({ text, tgUserId }, "model/:modelId/prediction");
+
         if (tgUserId != null) {
+          this.logger.info(243);
+
           const casPrediction = await this.checkCas(tgUserId);
 
+          this.logger.info(247, "casPrediction:", casPrediction);
+
           if (casPrediction != null) {
+            console.log(250);
+
             return casPrediction;
           }
         }
-        
+
         const result = await this.model.predict({ text });
 
         return result;
