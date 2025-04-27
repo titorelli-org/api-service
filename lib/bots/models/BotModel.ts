@@ -42,6 +42,7 @@ export class BotModel implements BotRecord {
   private readonly logger: Logger;
   private readonly siteOrigin = env.SITE_ORIGIN;
   private readonly apiOrigin = env.API_ORIGIN;
+  private readonly casOrigin = env.CAS_ORIGIN;
 
   public static getClientId(id: number, accountId: number) {
     return btoa([id, accountId].map((v) => maskNumber(v)).join(":"));
@@ -174,6 +175,7 @@ export class BotModel implements BotRecord {
       clientId: this.getClientId(),
       accessToken: this.accessToken,
       apiOrigin: this.apiOrigin,
+      casOrigin: this.casOrigin,
       tgBotToken: this.tgBotToken,
     });
 
@@ -298,6 +300,7 @@ export class BotModel implements BotRecord {
           clientId: this.getClientId(),
           accessToken: this.accessToken,
           apiOrigin: this.siteOrigin,
+          casOrigin: this.casOrigin,
           tgBotToken: this.tgBotToken,
         });
 

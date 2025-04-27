@@ -26,7 +26,10 @@ export class BotContainerModel {
     return containers.some(({ name }) => name === this.name);
   }
 
-  public async ifExists<TR, FR>(trueCallback?: () => Promise<TR>, falseCallback?: () => Promise<FR>) {
+  public async ifExists<TR, FR>(
+    trueCallback?: () => Promise<TR>,
+    falseCallback?: () => Promise<FR>,
+  ) {
     return (await this.exists()) ? trueCallback?.() : falseCallback?.();
   }
 
@@ -34,11 +37,13 @@ export class BotContainerModel {
     clientId,
     accessToken,
     apiOrigin,
+    casOrigin,
     tgBotToken,
   }: {
     clientId: string;
     accessToken: string;
     apiOrigin: string;
+    casOrigin: string;
     tgBotToken: string;
   }) {
     return this.ifExists(
@@ -59,6 +64,7 @@ export class BotContainerModel {
             TITORELLI_CLIENT_ID: clientId,
             TITORELLI_ACCESS_TOKEN: accessToken,
             TITORELLI_HOST: apiOrigin,
+            CAS_URL: casOrigin,
             BOT_TOKEN: tgBotToken,
           },
         };

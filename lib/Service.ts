@@ -8,6 +8,7 @@ import fastifySwaggerUi from "@fastify/swagger-ui";
 import type { LabeledExample, Prediction, IModel, ICas } from "./model";
 import type { ServiceAuthClient } from "./types";
 import { BotsService } from "./bots";
+import { env } from "./env";
 
 export type OauthTokenResult = {
   access_token: string;
@@ -231,7 +232,7 @@ export class Service {
         await this.ready;
 
         const {
-          params: { modelId },
+          params: { modelId: _modelId },
           body: { text, tgUserId },
         } = req;
 
@@ -369,10 +370,34 @@ export class Service {
           },
         },
       },
-      async ({ params: { modelId: _modelId }, body: _body }) => {
+      async ({ params: { modelId: _modelId }, body: { text, label } }) => {
         await this.ready;
 
-        throw new Error("Not implemented yet");
+        try {
+          const textUrl = new URL("/text", env.TEXT_ORIGIN);
+
+          const resp = await fetch(textUrl, {
+            method: "PUT",
+            body: text,
+            headers: {
+              "Content-Type": "text/plain",
+            },
+          });
+
+          const textUuid = await resp.text();
+
+          const metadataUrl = new URL(`/metadata/${textUuid}`, env.TEXT_ORIGIN);
+
+          await fetch(metadataUrl, {
+            method: "PUT",
+            body: JSON.stringify({ label, confidence: 1 }),
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+        } catch (e) {
+          this.logger.error(e);
+        }
       },
     );
   }
