@@ -243,7 +243,7 @@ export class Service {
 
           const casPrediction = await this.checkCas(tgUserId);
 
-          this.logger.info(247, "casPrediction:", casPrediction);
+          console.log(247, "casPrediction:", casPrediction);
 
           if (casPrediction != null) {
             console.log(250);
@@ -252,9 +252,7 @@ export class Service {
           }
         }
 
-        const result = await this.model.predict({ text });
-
-        return result;
+        return this.model.predict({ text });
       },
     );
   }
