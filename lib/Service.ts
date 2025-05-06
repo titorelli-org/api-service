@@ -9,6 +9,7 @@ import type { LabeledExample, Prediction, IModel, ICas } from "./model";
 import type { ServiceAuthClient } from "./types";
 import { BotsService } from "./bots";
 import { env } from "./env";
+import { normalizeText } from "./misc";
 
 export type OauthTokenResult = {
   access_token: string;
@@ -170,6 +171,13 @@ export class Service {
   };
 
   private async installPluginsBegin() {
+    const { FastifyOtelInstrumentation } = await import("@fastify/otel");
+
+    const otelInstrumentation = new FastifyOtelInstrumentation({
+      servername: "api-service",
+    });
+
+    await this.service.register(otelInstrumentation.plugin());
     await this.service.register(fastifyFormbody);
     await this.service.register(fastifyJwt, { secret: this.jwtSecret });
     await this.service.register(fastifySwagger, {
@@ -382,29 +390,23 @@ export class Service {
         await this.ready;
 
         try {
-          const textUrl = new URL("/text", env.TEXT_ORIGIN);
+          const url = new URL("/text", env.TEXT_ORIGIN);
 
-          const resp = await fetch(textUrl, {
+          const formData = new FormData();
+
+          formData.set("text", text);
+          formData.set("metadata", JSON.stringify({ label, confidence: 1 }));
+          formData.set("normalized", normalizeText(text));
+
+          await fetch(url, {
             method: "PUT",
-            body: text,
+            body: formData,
             headers: {
-              "Content-Type": "text/plain",
-            },
-          });
-
-          const textUuid = await resp.text();
-
-          const metadataUrl = new URL(`/metadata/${textUuid}`, env.TEXT_ORIGIN);
-
-          await fetch(metadataUrl, {
-            method: "PUT",
-            body: JSON.stringify({ label, confidence: 1 }),
-            headers: {
-              "Content-Type": "application/json",
+              Authorization: `Basic ${btoa(env.PSK_U + ":" + env.PSK_P)}`,
             },
           });
         } catch (e) {
-          this.logger.error(e);
+          this.logger.error(e, "Error while train text-storage");
         }
       },
     );

@@ -15,4 +15,6 @@ export const env = cleanEnv(process.env, {
   TEXT_ORIGIN: url(),
   OO_AUTH_CRED: str(),
   OO_BASE_URL: url(),
+  PSK_U: str(),
+  PSK_P: str(),
 });
