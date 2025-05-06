@@ -171,13 +171,6 @@ export class Service {
   };
 
   private async installPluginsBegin() {
-    const { FastifyOtelInstrumentation } = await import("@fastify/otel");
-
-    const otelInstrumentation = new FastifyOtelInstrumentation({
-      servername: "api-service",
-    });
-
-    await this.service.register(otelInstrumentation.plugin());
     await this.service.register(fastifyFormbody);
     await this.service.register(fastifyJwt, { secret: this.jwtSecret });
     await this.service.register(fastifySwagger, {
