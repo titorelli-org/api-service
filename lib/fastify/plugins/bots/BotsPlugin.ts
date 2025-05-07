@@ -1,0 +1,230 @@
+import { createHash } from "node:crypto";
+import type { FastifyInstance } from "fastify";
+import type { BotsService } from "../../../bots";
+import type { Logger } from "pino";
+
+export class BotsPlugin {
+  public readonly ready: Promise<void>;
+  private readonly botsCreatePath = "/bots";
+  private readonly botsListPath = "/bots";
+  private readonly botsUpdatePath = "/bots/:botExtrnalId";
+  private readonly botsStatePath = "/bots/:botExtrnalId/state";
+  private readonly botsRemovePath = "/bots/:botExtrnalId";
+  private readonly botsLivenessPath = "/bots/liveness";
+
+  constructor(
+    private service: FastifyInstance,
+    private bots: BotsService,
+    private logger: Logger,
+  ) {
+    this.ready = this.initialize();
+  }
+
+  private async initialize() {
+    await this.installBotsCreateRoute();
+    await this.installBotsListRoute();
+    await this.installBotsUpdateRoute();
+    await this.installBotsRemoveRoute();
+    await this.installBotsStateRoute();
+    await this.installBotsLivenessRoute();
+    await this.installBotDropdbRoute();
+  }
+
+  private async installBotsCreateRoute() {
+    await this.service.post<{
+      Body: {
+        id: number;
+        accessToken: string;
+        bypassTelemetry: boolean;
+        accountId: number;
+        modelId: number;
+        tgBotToken: string;
+        scopes: string;
+      };
+    }>(
+      this.botsCreatePath,
+      {
+        schema: {
+          body: {
+            type: "object",
+            properties: {
+              id: { type: "number" },
+              accessToken: { type: "string" },
+              bypassTelemetry: { type: "boolean" },
+              accountId: { type: "number" },
+              modelId: { type: "number" },
+              tgBotToken: { type: "string" },
+              scopes: { type: "string" },
+            },
+          },
+        },
+      },
+      async ({ body }) => {
+        await this.ready;
+
+        await this.bots.create(body);
+      },
+    );
+  }
+
+  private async installBotsListRoute() {
+    await this.service.get<{
+      Querystring: {
+        accountId: number;
+      };
+    }>(
+      this.botsListPath,
+      {
+        schema: {
+          querystring: {
+            type: "object",
+            properties: {
+              accountId: { type: "number" },
+            },
+          },
+        },
+      },
+      async ({ query: { accountId } }) => {
+        return this.bots.list(accountId);
+      },
+    );
+  }
+
+  private async installBotsUpdateRoute() {
+    await this.service.post<{
+      Params: {
+        botExtrnalId: number;
+      };
+      Body: {
+        bypassTelemetry?: boolean;
+        modelId?: number;
+        tgBotToken?: string;
+        state?: "starting" | "stopping";
+      };
+    }>(
+      this.botsUpdatePath,
+      {
+        schema: {
+          params: {
+            type: "object",
+            properties: {
+              botExtrnalId: { type: "number" },
+            },
+          },
+          body: {
+            type: "object",
+            properties: {
+              bypassTelemetry: { type: "boolean" },
+              modelId: { type: "number" },
+              tgBotToken: { type: "string" },
+              state: { enum: ["starting", "stopping", "deleted"] },
+            },
+          },
+        },
+      },
+      async ({ body, params: { botExtrnalId } }) => {
+        await this.ready;
+
+        await this.bots.update({ ...body, id: botExtrnalId });
+      },
+    );
+  }
+
+  private async installBotsRemoveRoute() {
+    await this.service.delete<{
+      Params: {
+        botExtrnalId: number;
+      };
+    }>(
+      this.botsRemovePath,
+      {
+        schema: {
+          params: {
+            type: "object",
+            properties: {
+              botExtrnalId: { type: "number" },
+            },
+          },
+        },
+      },
+      async ({ params: { botExtrnalId } }) => {
+        await this.bots.remove(botExtrnalId);
+      },
+    );
+  }
+
+  private async installBotsStateRoute() {
+    await this.service.get<{
+      Params: {
+        botExtrnalId: number;
+      };
+    }>(
+      this.botsStatePath,
+      {
+        schema: {
+          params: {
+            type: "object",
+            properties: {
+              botExtrnalId: { type: "number" },
+            },
+          },
+        },
+      },
+      async ({ params: { botExtrnalId } }) => {
+        await this.ready;
+
+        const data = await this.bots.get(botExtrnalId);
+
+        return data?.state ?? null;
+      },
+    );
+  }
+
+  private async installBotsLivenessRoute() {
+    await this.service.post<{
+      Querystring: {
+        clientId: string;
+      };
+    }>(
+      this.botsLivenessPath,
+      {
+        schema: {
+          querystring: {
+            type: "object",
+            properties: {
+              clientId: { type: "string" },
+            },
+          },
+        },
+      },
+      async ({ query: { clientId } }) => {
+        await this.ready;
+
+        return this.bots.reportAlive(clientId);
+      },
+    );
+  }
+
+  private async installBotDropdbRoute() {
+    let hash = createHash("SHA-256")
+      .update(process.env.JWT_SECRET)
+      .update("--pepper--")
+      .digest("hex");
+
+    this.logger.info("DROPDB TOKEN: %s", btoa(hash));
+
+    const path = `/bots/dropdb/${hash}`;
+
+    await this.service.post(
+      path,
+      {
+        schema: {
+          tags: ["X-HIDDEN"],
+        },
+      },
+      async () => {
+        await this.bots.dropdb();
+      },
+    );
+  }
+}
