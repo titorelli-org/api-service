@@ -155,12 +155,14 @@ export class BotsService {
     bypassTelemetry,
     modelId,
     tgBotToken,
+    accessToken,
     state,
   }: {
     id: number;
     bypassTelemetry?: boolean;
     modelId?: number;
     tgBotToken?: string;
+    accessToken?: string;
     state?: string;
   }) {
     const bot = await BotModel.getByExternalId(externalId, {
@@ -184,6 +186,10 @@ export class BotsService {
       await bot.setTgBotToken(tgBotToken);
     }
 
+    if (accessToken != null) {
+      await bot.setAccessToken(accessToken)
+    }
+
     if (state != null) {
       if (state === "stopping" || state === "deleted") {
         this.stopLiveness(bot.id);
@@ -200,6 +206,12 @@ export class BotsService {
       botRepository: this.botRepository,
       logger: this.logger,
     });
+  }
+
+  public async listByAccessToken(accessToken: string) {
+    const bots = await this.botRepository.getAllWithAccessToken(accessToken);
+
+    return bots.map((bot) => BotModel.prototype.toJSON.call(bot));
   }
 
   public async remove(externalId: number) {

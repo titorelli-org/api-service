@@ -18,6 +18,7 @@ export type CreateProps = {
 export type UpdateProps = {
   bypassTelemetry?: boolean;
   modelId?: number;
+  accessToken?: string;
   tgBotToken?: string;
 };
 
@@ -82,5 +83,12 @@ export class BotRepository {
 
   public async setStateById(id: number, state: BotRecord["state"]) {
     await this.db.knex.update({ state }).into("bot").where("id", id);
+  }
+
+  public async getAllWithAccessToken(accessToken: string) {
+    return this.db.knex
+      .select<BotRecord[]>("*")
+      .from("bot")
+      .where("accessToken", accessToken);
   }
 }

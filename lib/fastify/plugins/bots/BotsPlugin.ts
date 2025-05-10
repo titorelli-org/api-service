@@ -11,6 +11,7 @@ export class BotsPlugin {
   private readonly botsStatePath = "/bots/:botExtrnalId/state";
   private readonly botsRemovePath = "/bots/:botExtrnalId";
   private readonly botsLivenessPath = "/bots/liveness";
+  private readonly botsAffectedPath = "/bots/affected";
 
   constructor(
     private service: FastifyInstance,
@@ -27,7 +28,7 @@ export class BotsPlugin {
     await this.installBotsRemoveRoute();
     await this.installBotsStateRoute();
     await this.installBotsLivenessRoute();
-    await this.installBotDropdbRoute();
+    await this.installBotDropdbRoute(); // TODO: Remove
   }
 
   private async installBotsCreateRoute() {
@@ -71,6 +72,7 @@ export class BotsPlugin {
     await this.service.get<{
       Querystring: {
         accountId: number;
+        accessToken: string;
       };
     }>(
       this.botsListPath,
@@ -78,13 +80,19 @@ export class BotsPlugin {
         schema: {
           querystring: {
             type: "object",
+            required: ["accountId"],
             properties: {
               accountId: { type: "number" },
+              accessToken: { type: "string" },
             },
           },
         },
       },
-      async ({ query: { accountId } }) => {
+      async ({ query: { accountId, accessToken } }) => {
+        if (accessToken) {
+          return this.bots.listByAccessToken(accessToken);
+        }
+
         return this.bots.list(accountId);
       },
     );
@@ -99,6 +107,7 @@ export class BotsPlugin {
         bypassTelemetry?: boolean;
         modelId?: number;
         tgBotToken?: string;
+        accessToken?: string;
         state?: "starting" | "stopping";
       };
     }>(
@@ -117,6 +126,7 @@ export class BotsPlugin {
               bypassTelemetry: { type: "boolean" },
               modelId: { type: "number" },
               tgBotToken: { type: "string" },
+              accessToken: { type: "string" },
               state: { enum: ["starting", "stopping", "deleted"] },
             },
           },

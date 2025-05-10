@@ -165,7 +165,7 @@ export class BotModel implements BotRecord {
   }
 
   public async start() {
-    if (this.hardReloading) return null;
+    if (this._hardReloading) return null;
 
     this.logger.info("Starting bot...");
 
@@ -185,7 +185,7 @@ export class BotModel implements BotRecord {
   }
 
   public async stop() {
-    if (this.hardReloading) return null;
+    if (this._hardReloading) return null;
 
     this.logger.info("Stopping bot...");
 
@@ -197,7 +197,7 @@ export class BotModel implements BotRecord {
   }
 
   public async restart() {
-    if (this.hardReloading) return null;
+    if (this._hardReloading) return null;
 
     this.logger.info("Restarting bot...");
 
@@ -206,7 +206,7 @@ export class BotModel implements BotRecord {
   }
 
   public async delete() {
-    if (this.hardReloading) return null;
+    if (this._hardReloading) return null;
 
     this.logger.info("Deleting bot...");
 
@@ -216,7 +216,7 @@ export class BotModel implements BotRecord {
   }
 
   public async setState(state: "starting" | "stopping" | "deleted") {
-    if (this.hardReloading) return null;
+    if (this._hardReloading) return null;
 
     switch (state) {
       case "starting":
@@ -250,6 +250,14 @@ export class BotModel implements BotRecord {
     await this.botRepository.updateById(this.id, { tgBotToken });
 
     Reflect.set(this, "tgBotToken", tgBotToken);
+
+    return this.sheduleHardReload();
+  }
+
+  public async setAccessToken(accessToken: string) {
+    await this.botRepository.updateById(this.id, { accessToken });
+
+    Reflect.set(this, "accessToken", accessToken);
 
     return this.sheduleHardReload();
   }
@@ -288,10 +296,12 @@ export class BotModel implements BotRecord {
     }, 3 * 1000);
   }
 
-  private hardReloading = false;
+  private _hardReloading = false;
   private async hardReload() {
+    if (this._hardReloading) return null;
+
     try {
-      this.hardReloading = true;
+      this._hardReloading = true;
 
       return this.container.ifExists(async () => {
         await this.container.destroy();
@@ -309,7 +319,7 @@ export class BotModel implements BotRecord {
     } catch (error) {
       this.logger.error(error);
     } finally {
-      this.hardReloading = false;
+      this._hardReloading = false;
     }
   }
 }
