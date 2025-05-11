@@ -11,6 +11,7 @@ export const env = cleanEnv(process.env, {
   DOCKHOST_TOKEN: str(),
   CAS_ORIGIN: url(),
   API_ORIGIN: url(),
+  TELEMETRY_ORIGIN: url(),
   MODEL_ORIGIN: url(),
   TEXT_ORIGIN: url(),
   OO_AUTH_CRED: str(),

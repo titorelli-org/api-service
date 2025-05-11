@@ -38,12 +38,14 @@ export class BotContainerModel {
     accessToken,
     apiOrigin,
     casOrigin,
+    telemetryOrigin,
     tgBotToken,
   }: {
     clientId: string;
     accessToken: string;
     apiOrigin: string;
     casOrigin: string;
+    telemetryOrigin: string;
     tgBotToken: string;
   }) {
     return this.ifExists(
@@ -64,7 +66,8 @@ export class BotContainerModel {
             TITORELLI_CLIENT_ID: clientId,
             TITORELLI_ACCESS_TOKEN: accessToken,
             TITORELLI_HOST: apiOrigin,
-            CAS_URL: casOrigin,
+            CAS_ORIGIN: casOrigin,
+            TELEMETRY_ORIGIN: telemetryOrigin,
             BOT_TOKEN: tgBotToken,
           },
         };

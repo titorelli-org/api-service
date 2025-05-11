@@ -43,6 +43,7 @@ export class BotModel implements BotRecord {
   private readonly siteOrigin = env.SITE_ORIGIN;
   private readonly apiOrigin = env.API_ORIGIN;
   private readonly casOrigin = env.CAS_ORIGIN;
+  private readonly telemetryOrigin = env.TELEMETRY_ORIGIN;
 
   public static getClientId(id: number, accountId: number) {
     return btoa([id, accountId].map((v) => maskNumber(v)).join(":"));
@@ -85,8 +86,6 @@ export class BotModel implements BotRecord {
   }) {
     const dockhostContainer = nameGenerator.generate(accountId, externalId);
 
-    logger.info('dockhostContainer = "%s"', dockhostContainer);
-
     const id = await botRepository.create({
       externalId,
       accessToken,
@@ -99,8 +98,6 @@ export class BotModel implements BotRecord {
       dockhostProject,
       scopes,
     });
-
-    logger.info("Bot record created with id = %s", id);
 
     return new BotModel(
       {
@@ -176,6 +173,7 @@ export class BotModel implements BotRecord {
       accessToken: this.accessToken,
       apiOrigin: this.apiOrigin,
       casOrigin: this.casOrigin,
+      telemetryOrigin: this.telemetryOrigin,
       tgBotToken: this.tgBotToken,
     });
 
@@ -311,6 +309,7 @@ export class BotModel implements BotRecord {
           accessToken: this.accessToken,
           apiOrigin: this.siteOrigin,
           casOrigin: this.casOrigin,
+          telemetryOrigin: this.telemetryOrigin,
           tgBotToken: this.tgBotToken,
         });
 
