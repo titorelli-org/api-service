@@ -11,7 +11,7 @@ export class BotsPlugin {
   private readonly botsStatePath = "/bots/:botExtrnalId/state";
   private readonly botsRemovePath = "/bots/:botExtrnalId";
   private readonly botsLivenessPath = "/bots/liveness";
-  private readonly botsAffectedPath = "/bots/affected";
+  private readonly truncateBotDbPath = "/bots/truncate/:token";
 
   constructor(
     private service: FastifyInstance,
@@ -28,7 +28,7 @@ export class BotsPlugin {
     await this.installBotsRemoveRoute();
     await this.installBotsStateRoute();
     await this.installBotsLivenessRoute();
-    await this.installBotDropdbRoute(); // TODO: Remove
+    await this.installBotsTruncateRoute();
   }
 
   private async installBotsCreateRoute() {
@@ -215,25 +215,37 @@ export class BotsPlugin {
     );
   }
 
-  private async installBotDropdbRoute() {
+  private async installBotsTruncateRoute() {
     let hash = createHash("SHA-256")
       .update(process.env.JWT_SECRET)
       .update("--pepper--")
       .digest("hex");
 
-    this.logger.info("DROPDB TOKEN: %s", btoa(hash));
+    this.logger.info("TRUNCATE DB TOKEN: %s", btoa(hash));
 
-    const path = `/bots/dropdb/${hash}`;
-
-    await this.service.post(
-      path,
+    await this.service.post<{
+      Params: {
+        token: string;
+      };
+    }>(
+      this.truncateBotDbPath,
       {
         schema: {
           tags: ["X-HIDDEN"],
+          params: {
+            type: "object",
+            properties: {
+              token: { type: "string" },
+            },
+          },
         },
       },
-      async () => {
-        await this.bots.dropdb();
+      async ({ params: { token } }) => {
+        if (hash !== atob(token)) {
+          return new Error("Bad token");
+        }
+
+        await this.bots.truncateDb();
       },
     );
   }
