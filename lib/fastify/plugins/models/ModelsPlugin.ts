@@ -74,15 +74,9 @@ export class ModelsPlugin {
         this.logger.info({ text, tgUserId }, "model/:modelId/prediction");
 
         if (tgUserId != null) {
-          this.logger.info(243);
-
           const casPrediction = await this.checkCas(tgUserId);
 
-          console.log(247, "casPrediction:", casPrediction);
-
           if (casPrediction != null) {
-            console.log(250);
-
             return casPrediction;
           }
         }

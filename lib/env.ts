@@ -1,4 +1,4 @@
-import { cleanEnv, host, port, str, url } from "envalid";
+import { bool, cleanEnv, host, port, str, url } from "envalid";
 
 export const env = cleanEnv(process.env, {
   PORT: port({ default: 3000 }),
@@ -18,4 +18,7 @@ export const env = cleanEnv(process.env, {
   OO_BASE_URL: url(),
   PSK_U: str(),
   PSK_P: str(),
+  // Feture flags:
+  FEAT_LEGACY_AUTH: bool({ default: true }),
+  FEAT_MODERN_AUTH: bool({ default: false }),
 });

@@ -11,6 +11,10 @@ import modelsPlugin from "./fastify/plugins/models";
 import casPlugin from "./fastify/plugins/cas";
 import botsPlugin from "./fastify/plugins/bots";
 import oauthPlugin from "./fastify/plugins/oauth";
+import { env } from "./env";
+import { oidcProvider } from "@titorelli-org/fastify-oidc-provider";
+import { protectedRoutes } from "@titorelli-org/fastify-protected-routes";
+import { JwksStore } from "@titorelli-org/jwks-store";
 
 declare module "fastify" {
   interface FastifyInstance extends FastifyJwtNamespace<{ namespace: "jwt" }> {
@@ -27,6 +31,11 @@ export type ServiceConfig = {
   jwtSecret: string;
   bots: BotsService;
   oauthClients: ServiceAuthClient[];
+  jwksStore?: JwksStore;
+  features?: {
+    legacyAuth?: boolean;
+    modernAuth?: boolean;
+  };
 };
 
 export type JwtTokenPayload = {
@@ -43,7 +52,13 @@ export class Service {
   private host: string;
   private jwtSecret: string;
   private oauthClients: ServiceAuthClient[];
+  private apiOrigin = env.API_ORIGIN;
+  private jwksStore?: JwksStore;
   private bots: BotsService;
+  private features: ServiceConfig["features"] = {
+    legacyAuth: true,
+    modernAuth: false,
+  };
   private ready: Promise<void>;
 
   constructor({
@@ -54,6 +69,7 @@ export class Service {
     cas,
     jwtSecret,
     bots,
+    features,
     oauthClients,
   }: ServiceConfig) {
     this.logger = logger;
@@ -64,6 +80,13 @@ export class Service {
     this.jwtSecret = jwtSecret;
     this.bots = bots;
     this.oauthClients = oauthClients;
+    this.features = Object.assign(
+      {
+        legacyAuth: true,
+        modernAuth: false,
+      },
+      features,
+    );
     this.ready = this.initialize();
   }
 
@@ -109,6 +132,30 @@ export class Service {
   }
 
   private async installAppPlugins() {
+    if (this.features.modernAuth) {
+      if (this.jwksStore) {
+        await this.service.register(oidcProvider, {
+          origin: this.apiOrigin,
+          jwksStore: this.jwksStore,
+          logger: this.logger,
+        });
+      } else {
+        this.logger.warn(
+          "features.modernAuth are enabled, but jwksStore not provided",
+        );
+      }
+
+      await this.service.register(protectedRoutes, {
+        origin: this.apiOrigin,
+        authorizationServers: [`${this.apiOrigin}/oidc`],
+        allRoutesRequireAuthorization: false,
+        logger: this.logger,
+        async checkToken() {
+          return true;
+        },
+      });
+    }
+
     await this.service.register(modelsPlugin, {
       cas: this.cas,
       model: this.model,
@@ -125,11 +172,13 @@ export class Service {
       logger: this.logger,
     });
 
-    await this.service.register(oauthPlugin, {
-      oauthClients: this.oauthClients,
-      bots: this.bots,
-      logger: this.logger,
-    });
+    if (this.features.legacyAuth) {
+      await this.service.register(oauthPlugin, {
+        oauthClients: this.oauthClients,
+        bots: this.bots,
+        logger: this.logger,
+      });
+    }
   }
 
   private async installCommonPluginsEnd() {

@@ -28,4 +28,8 @@ new Service({
     baseDockhostContainer: "titus-bot",
     logger,
   }),
+  features: {
+    legacyAuth: env.FEAT_LEGACY_AUTH,
+    modernAuth: env.FEAT_MODERN_AUTH,
+  },
 }).listen();
