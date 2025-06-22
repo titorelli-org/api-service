@@ -14,7 +14,7 @@
     "@fastify/swagger": "^9.4.2",
     "@fastify/swagger-ui": "^5.2.2",
     "@openobserve/pino-openobserve": "^0.1.0",
-    "@titorelli-org/fastify-oidc-provider": "^1.0.0",
+    "@titorelli-org/fastify-oidc-provider": "^1.0.1",
     "@titorelli-org/fastify-protected-routes": "^0.3.0",
     "@titorelli-org/jwks-store": "^0.1.1",
     "@titorelli/client": "^4.1.0",
