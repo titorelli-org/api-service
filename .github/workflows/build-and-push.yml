@@ -24,6 +24,10 @@ jobs:
           registry: ${{env.REGISTRY}}
           username: ${{github.actor}}
           password: ${{secrets.GITHUB_TOKEN}}
+      - name: Configure .npmrc
+        run: |
+          echo "@titorelli-org:registry=https://npm.pkg.github.com"  > .npmrc
+          echo '//npm.pkg.github.com/:_authToken=${{secrets.GITHUB_TOKEN}}' >> .npmrc
       - name: Login to npm ghcr
         run: "npm set '//npm.pkg.github.com/:_authToken=${{secrets.GITHUB_TOKEN}}'"
       - name: Build and push

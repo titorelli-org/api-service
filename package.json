@@ -17,6 +17,7 @@
     "@titorelli-org/fastify-oidc-provider": "^1.0.0",
     "@titorelli-org/fastify-protected-routes": "^0.3.0",
     "@titorelli-org/jwks-store": "^0.1.1",
+    "@titorelli/client": "^4.1.0",
     "@types/replace-ext": "^2.0.2",
     "@vowpalwabbit/vowpalwabbit": "^0.0.8",
     "camelcase-keys": "^9.1.3",

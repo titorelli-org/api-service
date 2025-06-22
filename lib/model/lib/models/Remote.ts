@@ -1,41 +1,35 @@
 import { UnlabeledExample, Prediction, LabeledExample } from "../../types";
 import type { IModel } from "./IModel";
 import { env } from "../../../env";
+import { createClient, serviceDiscovery, type ModelClient } from "@titorelli/client";
 
 export class RemoteModel implements IModel {
   public type = "remote" as const;
 
   async predict({ text }: UnlabeledExample): Promise<Prediction | null> {
-    const url = new URL("/predict", env.MODEL_ORIGIN);
+    const model = await this.getModelClient();
 
-    const resp = await fetch(url, {
-      method: "POST",
-      body: JSON.stringify({ text }),
-      headers: { "Content-Type": "application/json" },
-    });
-
-    const result = await resp.json();
-
-    return result;
+    return model.predict({ text });
   }
 
-  async train({ text, label }: LabeledExample): Promise<void> {
-    const url = new URL("/train", env.MODEL_ORIGIN);
-
-    await fetch(url, {
-      method: "POST",
-      body: JSON.stringify({ text, label }),
-      headers: { "Content-Type": "application/json" },
-    });
+  async train(_: LabeledExample): Promise<void> {
+    // Not implemented yet
   }
 
-  async trainBulk(examples: LabeledExample[]): Promise<void> {
-    const url = new URL("/trainBulk", env.MODEL_ORIGIN);
+  async trainBulk(_examples: LabeledExample[]): Promise<void> {
+    // Not implemented yet
+  }
 
-    await fetch(url, {
-      method: "POST",
-      body: JSON.stringify(examples),
-      headers: { "Content-Type": "application/json" },
-    });
+  private _modelClient: ModelClient | null = null;
+  private async getModelClient() {
+    if (this._modelClient) return this._modelClient;
+
+    const { modelOrigin } = await serviceDiscovery(env.SITE_ORIGIN);
+
+    const model = await createClient("model", modelOrigin, "api");
+
+    this._modelClient = model;
+
+    return model;
   }
 }

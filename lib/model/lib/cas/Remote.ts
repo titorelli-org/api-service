@@ -1,5 +1,11 @@
 import type { Logger } from "pino";
+import {
+  serviceDiscovery,
+  createClient,
+  type CasClient,
+} from "@titorelli/client";
 import type { ICas } from "./types";
+import { env } from "../../../env";
 
 export type IsBannedResult = {
   banned: boolean;
@@ -11,49 +17,35 @@ export class RemoteAntispam implements ICas {
   constructor(private logger: Logger) {}
 
   async has(tgUserId: number): Promise<boolean> {
-    try {
-      const url = new URL("/isBanned", this.baseUrl);
+    const cas = await this.getCasClient();
 
-      url.searchParams.set("tgUserId", String(tgUserId));
+    const { banned } = await cas.isBanned(tgUserId);
 
-      const resp = await fetch(url);
-      const { banned } = (await resp.json()) as Awaited<IsBannedResult>;
-
-      return banned;
-    } catch (error) {
-      this.logger.error(error);
-
-      return false;
-    }
+    return banned;
   }
 
   async add(tgUserId: number): Promise<void> {
-    try {
-      const url = new URL("/train", this.baseUrl);
+    const cas = await this.getCasClient();
 
-      await fetch(url, {
-        method: "POST",
-        body: JSON.stringify({ tgUserId, banned: true }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-    } catch (error) {
-      this.logger.error(error);
-    }
+    return cas.ban(tgUserId);
   }
 
   async remove(tgUserId: number): Promise<void> {
-    try {
-      const url = new URL("/train", this.baseUrl);
+    const cas = await this.getCasClient();
 
-      await fetch(url, {
-        method: "POST",
-        body: JSON.stringify({ tgUserId, banned: false }),
-        headers: { "Content-Type": "application/json" },
-      });
-    } catch (error) {
-      this.logger.error(error);
-    }
+    return cas.protect(tgUserId);
+  }
+
+  private _casClient: CasClient | null = null;
+  private async getCasClient() {
+    if (this._casClient) return this._casClient;
+
+    const { casOrigin } = await serviceDiscovery(env.SITE_ORIGIN);
+
+    const cas = await createClient("cas", casOrigin, "api");
+
+    this._casClient = cas;
+
+    return cas;
   }
 }
