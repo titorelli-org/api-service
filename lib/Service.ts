@@ -38,11 +38,6 @@ export type ServiceConfig = {
   };
 };
 
-export type JwtTokenPayload = {
-  sub: string;
-  scopes: string[];
-};
-
 export class Service {
   private logger: Logger;
   private cas: ICas;
@@ -150,8 +145,8 @@ export class Service {
         authorizationServers: [`${this.apiOrigin}/oidc`],
         allRoutesRequireAuthorization: false,
         logger: this.logger,
-        async checkToken() {
-          return true;
+        async checkToken(token, url, scopes) {
+          return true
         },
       });
     }

@@ -26,11 +26,11 @@ export class OauthPlugin {
   }
 
   private async initialize() {
-    await this.installOauthTokenRoute();
+    this.installOauthTokenRoute();
   }
 
-  private async installOauthTokenRoute() {
-    await this.service.post<{
+  private installOauthTokenRoute() {
+    this.service.post<{
       Body: {
         grant_type: "client_credentials";
         client_id: string;
@@ -134,7 +134,7 @@ export class OauthPlugin {
     clientId: string,
     clientSecret: string,
     scope: string,
-  ) {
+  ): Promise<OauthTokenResult> {
     const requestScopes =
       scope
         ?.split(" ")
@@ -157,7 +157,7 @@ export class OauthPlugin {
         access_token: token,
         token_type: "Bearer",
         scope: grantedScopes.join(" "),
-      } as OauthTokenResult;
+      };
     }
 
     return null;

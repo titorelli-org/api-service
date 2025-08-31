@@ -52,7 +52,7 @@ export class BotsService {
     baseDockhostContainer,
     baseDockhostImage,
     logger,
-  }: // siteOrigin,
+  }:
   {
     dockhostToken: string;
     baseDockhostProject: string;
@@ -134,22 +134,6 @@ export class BotsService {
       tgBotToken,
       scopes,
     });
-
-    // return BotModel.create({
-    //   externalId,
-    //   accessToken,
-    //   bypassTelemetry,
-    //   accountId,
-    //   modelId,
-    //   tgBotToken,
-    //   scopes,
-    //   dockhostImage: this.baseDockhostImage,
-    //   dockhostProject: this.baseDockhostProject,
-    //   nameGenerator: this.nameGenerator,
-    //   dockhost: this.dockhost,
-    //   botRepository: this.botRepository,
-    //   logger: this.logger,
-    // });
   }
 
   public async list(accountId: number) {
@@ -159,17 +143,6 @@ export class BotsService {
       .where("accountId", accountId);
 
     return Promise.all(records.map(({ id }) => this.botFactory.getBotById(id)));
-
-    // return Promise.all(
-    //   records.map(({ id }) =>
-    //     BotModel.getBotById(id, {
-    //       nameGenerator: this.nameGenerator,
-    //       dockhost: this.dockhost,
-    //       botRepository: this.botRepository,
-    //       logger: this.logger,
-    //     }),
-    //   ),
-    // );
   }
 
   public async update({
@@ -188,13 +161,6 @@ export class BotsService {
     state?: string;
   }) {
     const bot = await this.botFactory.getByExternalId(externalId);
-
-    // const bot = await BotModel.getByExternalId(externalId, {
-    //   nameGenerator: this.nameGenerator,
-    //   dockhost: this.dockhost,
-    //   botRepository: this.botRepository,
-    //   logger: this.logger,
-    // });
 
     if (!bot) throw new Error(`Bot with id = ${externalId} not found`);
 
@@ -225,12 +191,6 @@ export class BotsService {
 
   public async get(externalId: number) {
     return this.botFactory.getByExternalId(externalId);
-    // return BotModel.getByExternalId(externalId, {
-    //   nameGenerator: this.nameGenerator,
-    //   dockhost: this.dockhost,
-    //   botRepository: this.botRepository,
-    //   logger: this.logger,
-    // });
   }
 
   public async listByAccessToken(accessToken: string) {
@@ -241,12 +201,6 @@ export class BotsService {
 
   public async remove(externalId: number) {
     const bot = await this.botFactory.getByExternalId(externalId);
-    // const bot = await BotModel.getByExternalId(externalId, {
-    //   nameGenerator: this.nameGenerator,
-    //   dockhost: this.dockhost,
-    //   botRepository: this.botRepository,
-    //   logger: this.logger,
-    // });
 
     if (!bot) return null;
 
@@ -297,12 +251,6 @@ export class BotsService {
     scopes: string[],
   ): Promise<[false] | [true, string[]]> {
     const bot = await this.botFactory.getByClientId(clientId);
-    // const bot = await BotModel.getByClientId(clientId, {
-    //   nameGenerator: this.nameGenerator,
-    //   dockhost: this.dockhost,
-    //   botRepository: this.botRepository,
-    //   logger: this.logger,
-    // });
 
     if (!bot) return [false];
 
@@ -334,12 +282,6 @@ export class BotsService {
 
   private async checkIfBotStopped(botId: number) {
     const bot = await this.botFactory.getBotById(botId);
-    // const bot = await BotModel.getBotById(botId, {
-    //   nameGenerator: this.nameGenerator,
-    //   dockhost: this.dockhost,
-    //   botRepository: this.botRepository,
-    //   logger: this.logger,
-    // });
     const containerStatus = await bot.getContainerStatus();
 
     if (containerStatus === "paused" || containerStatus === "stopped") {

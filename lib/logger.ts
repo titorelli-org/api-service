@@ -1,6 +1,6 @@
 import pino from "pino";
 import pinoPretty from "pino-pretty";
-import OpenobserveTransport from "@openobserve/pino-openobserve";
+import { OpenobserveTransport } from "@openobserve/pino-openobserve";
 import { env } from "./env";
 
 const ooBaseUrl = new URL(env.OO_BASE_URL);
