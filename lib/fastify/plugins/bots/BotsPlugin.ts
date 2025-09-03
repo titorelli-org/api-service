@@ -32,7 +32,7 @@ export class BotsPlugin {
   }
 
   private async installBotsCreateRoute() {
-    await this.service.post<{
+    this.service.post<{
       Body: {
         id: number;
         accessToken: string;
@@ -69,7 +69,7 @@ export class BotsPlugin {
   }
 
   private async installBotsListRoute() {
-    await this.service.get<{
+    this.service.get<{
       Querystring: {
         accountId: number;
         accessToken: string;
@@ -99,7 +99,7 @@ export class BotsPlugin {
   }
 
   private async installBotsUpdateRoute() {
-    await this.service.post<{
+    this.service.post<{
       Params: {
         botExtrnalId: number;
       };
@@ -141,7 +141,7 @@ export class BotsPlugin {
   }
 
   private async installBotsRemoveRoute() {
-    await this.service.delete<{
+    this.service.delete<{
       Params: {
         botExtrnalId: number;
       };
@@ -164,7 +164,7 @@ export class BotsPlugin {
   }
 
   private async installBotsStateRoute() {
-    await this.service.get<{
+    this.service.get<{
       Params: {
         botExtrnalId: number;
       };
@@ -191,7 +191,7 @@ export class BotsPlugin {
   }
 
   private async installBotsLivenessRoute() {
-    await this.service.post<{
+    this.service.post<{
       Querystring: {
         clientId: string;
       };
@@ -223,7 +223,7 @@ export class BotsPlugin {
 
     this.logger.info("TRUNCATE DB TOKEN: %s", btoa(hash));
 
-    await this.service.post<{
+    this.service.post<{
       Params: {
         token: string;
       };

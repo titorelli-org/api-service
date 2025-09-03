@@ -13,7 +13,10 @@ import botsPlugin from "./fastify/plugins/bots";
 import oauthPlugin from "./fastify/plugins/oauth";
 import { env } from "./env";
 import { oidcProvider } from "@titorelli-org/fastify-oidc-provider";
-import { protectedRoutes } from "@titorelli-org/fastify-protected-routes";
+import {
+  protectedRoutes,
+  TokenValidator,
+} from "@titorelli-org/fastify-protected-routes";
 import { JwksStore } from "@titorelli-org/jwks-store";
 
 declare module "fastify" {
@@ -32,6 +35,7 @@ export type ServiceConfig = {
   bots: BotsService;
   oauthClients: ServiceAuthClient[];
   jwksStore?: JwksStore;
+  apiOrigin?: string;
   features?: {
     legacyAuth?: boolean;
     modernAuth?: boolean;
@@ -66,6 +70,7 @@ export class Service {
     bots,
     features,
     oauthClients,
+    apiOrigin,
   }: ServiceConfig) {
     this.logger = logger;
     this.cas = cas;
@@ -82,6 +87,8 @@ export class Service {
       },
       features,
     );
+    if (apiOrigin != null) this.apiOrigin = apiOrigin;
+
     this.ready = this.initialize();
   }
 
@@ -91,6 +98,12 @@ export class Service {
     await this.bots.start();
 
     await this.service.listen({ port: this.port, host: this.host });
+  }
+
+  public async terminate() {
+    await this.bots.stop();
+
+    await this.service.close();
   }
 
   private async initialize() {
@@ -134,21 +147,38 @@ export class Service {
           jwksStore: this.jwksStore,
           logger: this.logger,
         });
+
+        const tokenValidator = new TokenValidator({
+          jwksStore: this.jwksStore,
+          testSubject: (sub, url) => {
+            console.log("sub:", sub, "url:", url);
+
+            return true;
+          },
+          testAudience: (aud, url) => {
+            console.log("aud:", aud, "url:", url);
+
+            return true;
+          },
+          logger: this.logger,
+        });
+
+        await this.service.register(protectedRoutes, {
+          origin: this.apiOrigin,
+          authorizationServers: [`${this.apiOrigin}/oidc`],
+          allRoutesRequireAuthorization: true,
+          logger: this.logger,
+          checkToken: (token, url, scopes) => {
+            console.log("CHECK TOKEN!!!", token, url, scopes);
+
+            return tokenValidator.validate(token, url, scopes);
+          },
+        });
       } else {
         this.logger.warn(
           "features.modernAuth are enabled, but jwksStore not provided",
         );
       }
-
-      await this.service.register(protectedRoutes, {
-        origin: this.apiOrigin,
-        authorizationServers: [`${this.apiOrigin}/oidc`],
-        allRoutesRequireAuthorization: false,
-        logger: this.logger,
-        async checkToken(token, url, scopes) {
-          return true
-        },
-      });
     }
 
     await this.service.register(modelsPlugin, {
