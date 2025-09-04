@@ -90,6 +90,8 @@ export class Service {
     if (apiOrigin != null) this.apiOrigin = apiOrigin;
 
     this.ready = this.initialize();
+
+    this.logger.info(this.features, "Features list");
   }
 
   async listen() {
@@ -151,12 +153,12 @@ export class Service {
         const tokenValidator = new TokenValidator({
           jwksStore: this.jwksStore,
           testSubject: (sub, url) => {
-            console.log("sub:", sub, "url:", url);
+            this.logger.info({ sub, url }, "testSubject()");
 
             return true;
           },
           testAudience: (aud, url) => {
-            console.log("aud:", aud, "url:", url);
+            this.logger.info({ aud, url }, "testAudience()");
 
             return true;
           },
@@ -169,7 +171,7 @@ export class Service {
           allRoutesRequireAuthorization: true,
           logger: this.logger,
           checkToken: (token, url, scopes) => {
-            console.log("CHECK TOKEN!!!", token, url, scopes);
+            this.logger.info({ token, url, scopes }, "checkToken()");
 
             return tokenValidator.validate(token, url, scopes);
           },
