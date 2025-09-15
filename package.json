@@ -7,7 +7,7 @@
     "dev": "nodemon",
     "start": "ts-node -r dotenv/config index.ts",
     "test": "ts-node -r dotenv/config test/index.test.ts",
-    "check-updates:interactive": "ncu -i"
+    "ncu": "ncu"
   },
   "license": "AGPL-3.0-only",
   "dependencies": {

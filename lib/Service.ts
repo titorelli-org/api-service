@@ -18,6 +18,7 @@ import {
   TokenValidator,
 } from "@titorelli-org/fastify-protected-routes";
 import { JwksStore } from "@titorelli-org/jwks-store";
+import { validateToken } from "./misc/validateToken";
 
 declare module "fastify" {
   interface FastifyInstance extends FastifyJwtNamespace<{ namespace: "jwt" }> {
@@ -170,8 +171,12 @@ export class Service {
           authorizationServers: [`${this.apiOrigin}/oidc`],
           allRoutesRequireAuthorization: true,
           logger: this.logger,
-          checkToken: (token, url, scopes) => {
+          checkToken: async (token, url, scopes) => {
             this.logger.info({ token, url, scopes }, "checkToken()");
+
+            if (await validateToken(token)) {
+              return true;
+            }
 
             return tokenValidator.validate(token, url, scopes);
           },
